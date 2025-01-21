@@ -1,0 +1,15 @@
+{
+  "watch": [
+    "src",
+    "static",
+    "docusaurus.config.js",
+    "sidebars.js",
+    "package.json"
+  ],
+  "ext": "js,json,ts,tsx,md,mdx,css",
+  "ignore": [
+    "node_modules",
+    "build"
+  ],
+  "exec": "docusaurus start --port 3001"
+}
