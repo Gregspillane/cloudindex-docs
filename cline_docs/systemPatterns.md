@@ -6,20 +6,24 @@ Last Updated: 2024-01-10
 - Content separated from presentation
 - Markdown/MDX for content authoring
 - React components for UI customization
+- Dual documentation system (general docs and API reference)
 
 ## Core Technical Patterns
 1. Documentation Structure
-   - Organized in /docs directory
-   - Tutorials split into basics and extras
-   - Markdown features documented
-   - Versioning and translation support
-   - API documentation section added
+   - Two main sections:
+     * General Documentation (/docs/docs/*)
+     * API Reference (/docs/api/*)
+   - Each section configured as separate plugin instance
+   - Independent routing paths (/docs and /api)
+   - Shared sidebar configuration file
+   - Independent navigation for each section
 
 2. Routing Patterns
-   - Root path serves documentation
-   - API reference at /api
+   - General documentation at /docs/*
+   - API reference at /api/*
    - Blog at /blog
    - Custom 404 pages
+   - Each documentation section has its own base path
 
 3. Navigation Patterns
    - Main navigation items:

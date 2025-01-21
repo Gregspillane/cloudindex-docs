@@ -13,19 +13,14 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
  Create as many sidebars as you want.
  */
 const sidebars: SidebarsConfig = {
+  // Sidebar for general documentation (default plugin)
   docsSidebar: [
-    {
-      type: 'category',
-      label: 'Docs',
-      items: ['intro']
-    }
+    'intro',
+    'getting-started'
   ],
+  // Sidebar for API documentation (api plugin)
   apiSidebar: [
-    {
-      type: 'category',
-      label: 'API Documentation',
-      items: ['api/index']
-    }
+    'index'
   ]
 };
 

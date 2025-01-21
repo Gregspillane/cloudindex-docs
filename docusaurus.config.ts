@@ -31,26 +31,33 @@ const config: Config = {
     locales: ['en'],
   },
 
+  plugins: [
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'default',
+        path: 'docs/docs',
+        routeBasePath: 'docs',
+        sidebarPath: './sidebars.docs.ts',
+        sidebarCollapsible: false,
+      },
+    ],
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'api',
+        path: 'docs/api',
+        routeBasePath: 'api',
+        sidebarPath: './sidebars.api.ts',
+        sidebarCollapsible: false,
+      },
+    ],
+  ],
   presets: [
     [
       'classic',
       {
-        docs: {
-          routeBasePath: '/',
-          sidebarPath: './sidebars.ts',
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
-          sidebarCollapsible: false,
-          numberPrefixParser: (filename) => {
-            // Use different numbering prefixes for docs and API sections
-            const isApi = filename.startsWith('api/');
-            return {
-              filename: isApi ? filename.replace(/^api\//, '') : filename,
-              // API docs use 1000+ numbers, regular docs use normal numbering
-              numberPrefix: isApi ? 1000 : undefined
-            };
-          }
-        },
+        docs: false, // Disable the docs plugin in the classic preset since we're using it as a standalone plugin
         blog: {
           showReadingTime: true,
           feedOptions: {
@@ -88,15 +95,14 @@ const config: Config = {
       },
       items: [
         {
-          type: 'doc',
-          docId: 'intro',
+          to: '/docs/intro',
           position: 'left',
           label: 'Docs',
         },
         {
-          to: 'api',
-          label: 'API Documentation',
+          to: '/api',
           position: 'left',
+          label: 'API Documentation',
         },
         {
           href: 'https://github.com/facebook/docusaurus',
@@ -113,7 +119,7 @@ const config: Config = {
           items: [
             {
               label: 'Tutorial',
-              to: '/docs/intro',
+              to: '/docs/intro', // Updated to reflect new docs path
             },
           ],
         },
