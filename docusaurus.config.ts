@@ -38,8 +38,13 @@ const config: Config = {
         id: 'default',
         path: 'docs/docs',
         routeBasePath: 'docs',
-        sidebarPath: './sidebars.docs.ts',
-        sidebarCollapsible: false,
+        sidebarPath: undefined, // Generate automatically from folder structure
+        sidebarCollapsible: true,
+        // Category index pages can be generated automatically
+        async sidebarItemsGenerator({defaultSidebarItemsGenerator, ...args}) {
+          const sidebarItems = await defaultSidebarItemsGenerator(args);
+          return sidebarItems;
+        },
       },
     ],
     [
@@ -48,8 +53,13 @@ const config: Config = {
         id: 'api',
         path: 'docs/api',
         routeBasePath: 'api',
-        sidebarPath: './sidebars.api.ts',
-        sidebarCollapsible: false,
+        sidebarPath: undefined, // Generate automatically from folder structure
+        sidebarCollapsible: true,
+        // Category index pages can be generated automatically
+        async sidebarItemsGenerator({defaultSidebarItemsGenerator, ...args}) {
+          const sidebarItems = await defaultSidebarItemsGenerator(args);
+          return sidebarItems;
+        },
       },
     ],
   ],
