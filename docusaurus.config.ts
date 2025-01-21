@@ -105,14 +105,14 @@ const config: Config = {
       },
       items: [
         {
-          to: '/docs/intro',
+          to: '/docs',
           position: 'left',
           label: 'Docs',
         },
         {
           to: '/api',
           position: 'left',
-          label: 'API Documentation',
+          label: 'API Reference',
         },
         {
           href: 'https://github.com/facebook/docusaurus',
@@ -129,7 +129,7 @@ const config: Config = {
           items: [
             {
               label: 'Tutorial',
-              to: '/docs/intro', // Updated to reflect new docs path
+              to: '/docs', // Updated to reflect root path
             },
           ],
         },

@@ -1,9 +1,10 @@
 ---
-title: API Documentation
+title: API Reference
 sidebar_position: 1
+slug: /
 ---
 
-# Cloudindex API Documentation
+# Cloudindex API Reference
 
 Welcome to the Cloudindex API documentation. Here you'll find comprehensive guides and references to help you integrate with our platform.
 
