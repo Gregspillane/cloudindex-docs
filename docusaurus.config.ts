@@ -37,7 +37,7 @@ const config: Config = {
       {
         id: 'default',
         path: 'docs/docs',
-        routeBasePath: 'docs',
+        routeBasePath: '/', // Make docs the root
         sidebarPath: undefined, // Generate automatically from folder structure
         sidebarCollapsible: true,
         // Category index pages can be generated automatically
@@ -105,7 +105,7 @@ const config: Config = {
       },
       items: [
         {
-          to: '/docs',
+          to: '/',
           position: 'left',
           label: 'Docs',
         },
@@ -129,7 +129,7 @@ const config: Config = {
           items: [
             {
               label: 'Tutorial',
-              to: '/docs', // Updated to reflect root path
+              to: '/', // Updated to reflect root path
             },
           ],
         },
