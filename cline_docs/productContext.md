@@ -1,21 +1,46 @@
 # Product Context
-Last Updated: 2024-01-10
 
-## Overview
-This is a Docusaurus documentation site project. Docusaurus is a static site generator optimized for creating documentation websites.
+## Purpose
+CloudIndex-AI is a cloud-based Retrieval-Augmented Generation (RAG) platform designed to simplify RAG-enabled application development for small technical teams and individual developers.
 
-## Core User Problems/Solutions
-- Problem: Need to create and maintain documentation
-- Solution: Use Docusaurus to generate a modern, maintainable documentation site
+## Problems Solved
+- Simplifies complex RAG implementation
+- Manages document processing and vector operations
+- Handles multiple data source integrations
+- Provides organization and project management
+- Streamlines authentication and access control
 
-## Key Workflows
-1. Writing documentation in Markdown/MDX
-2. Managing blog posts
-3. Customizing site appearance and components
-4. Deploying documentation
+## Core Functionality
+1. Document Processing
+   - Multiple format support (PDF, DOCX, MD, Code)
+   - Parallel processing with status tracking
+   - Version control
 
-## Product Direction and Priorities
-- Maintain clear, up-to-date documentation
-- Support both technical and non-technical content
-- Enable easy content creation through Markdown
-- Provide searchable, organized content structure
+2. Data Source Integration
+   - Google Drive, S3, Slack, Notion, OneDrive
+   - Real-time sync capabilities
+   - Circuit breaker protection
+
+3. Chat System
+   - Multiple LLM provider support (OpenAI, Anthropic)
+   - Thread management
+   - Real-time streaming responses
+   - Source attribution
+
+4. Vector Operations
+   - Pinecone integration
+   - Project-specific namespacing
+   - Performance monitoring
+
+5. Organization Management
+   - Multi-organization support
+   - Role-based access control
+   - Project management
+   - API key management
+
+## Expected Behavior
+- Secure authentication via Clerk
+- Efficient document processing and vector storage
+- Real-time chat interactions with LLMs
+- Seamless data source integration
+- Scalable organization and project management

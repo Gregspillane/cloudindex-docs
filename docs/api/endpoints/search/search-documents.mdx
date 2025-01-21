@@ -1,0 +1,213 @@
+---
+title: Search Documents
+sidebar_position: 1
+---
+
+# Search Documents
+
+Search across your document collection using hybrid search with semantic and keyword capabilities.
+
+## HTTP Request
+
+```http
+POST https://api.cloudindex.com/v1/search
+```
+
+## Request Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| Authorization | Yes | API key or OAuth token |
+| Content-Type | Yes | Must be `application/json` |
+
+## Request Body
+
+```json
+{
+  "query": "machine learning applications in healthcare",
+  "filters": {
+    "documentTypes": ["pdf", "txt"],
+    "dateRange": {
+      "from": "2023-01-01T00:00:00Z",
+      "to": "2024-01-01T00:00:00Z"
+    }
+  },
+  "options": {
+    "limit": 10,
+    "threshold": 0.7
+  }
+}
+```
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| query | string | Yes | The search query text |
+| filters | object | No | Optional search filters |
+| filters.documentTypes | string[] | No | Filter by document types |
+| filters.dateRange | object | No | Filter by date range |
+| options | object | No | Search configuration options |
+| options.limit | number | No | Maximum number of results (default: 10) |
+| options.threshold | number | No | Minimum similarity score (0-1) |
+
+## Response
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_123",
+      "title": "AI in Modern Healthcare",
+      "snippet": "...machine learning algorithms are revolutionizing patient care...",
+      "score": 0.92,
+      "metadata": {
+        "author": "Dr. Smith",
+        "publishedDate": "2023-06-15T10:30:00Z"
+      }
+    }
+  ],
+  "totalResults": 1,
+  "searchMetadata": {
+    "processingTimeMs": 150,
+    "queryVector": [0.1, 0.2, 0.3]
+  }
+}
+```
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| 400 | Invalid request body |
+| 401 | Invalid or missing authentication |
+| 422 | Invalid search parameters |
+| 429 | Rate limit exceeded |
+
+## Code Examples
+
+import ApiCodeTabs from '@site/src/components/ApiCodeTabs';
+
+<ApiCodeTabs
+  examples={[
+    {
+      language: 'bash',
+      label: 'cURL',
+      code: `curl -X POST https://api.cloudindex.com/v1/search \\
+  -H "Authorization: Bearer your-api-key" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "query": "machine learning applications in healthcare",
+    "filters": {
+      "documentTypes": ["pdf", "txt"],
+      "dateRange": {
+        "from": "2023-01-01T00:00:00Z",
+        "to": "2024-01-01T00:00:00Z"
+      }
+    },
+    "options": {
+      "limit": 10,
+      "threshold": 0.7
+    }
+  }'`
+    },
+    {
+      language: 'javascript',
+      label: 'Node.js',
+      code: `const response = await fetch('https://api.cloudindex.com/v1/search', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer your-api-key',
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    query: 'machine learning applications in healthcare',
+    filters: {
+      documentTypes: ['pdf', 'txt'],
+      dateRange: {
+        from: '2023-01-01T00:00:00Z',
+        to: '2024-01-01T00:00:00Z'
+      }
+    },
+    options: {
+      limit: 10,
+      threshold: 0.7
+    }
+  }),
+});
+
+const results = await response.json();`
+    },
+    {
+      language: 'python',
+      label: 'Python',
+      code: `import requests
+
+response = requests.post(
+    'https://api.cloudindex.com/v1/search',
+    headers={
+        'Authorization': 'Bearer your-api-key',
+        'Content-Type': 'application/json'
+    },
+    json={
+        'query': 'machine learning applications in healthcare',
+        'filters': {
+            'documentTypes': ['pdf', 'txt'],
+            'dateRange': {
+                'from': '2023-01-01T00:00:00Z',
+                'to': '2024-01-01T00:00:00Z'
+            }
+        },
+        'options': {
+            'limit': 10,
+            'threshold': 0.7
+        }
+    }
+)
+
+results = response.json()`
+    },
+    {
+      language: 'go',
+      label: 'Go',
+      code: `package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "io/ioutil"
+    "net/http"
+)
+
+func main() {
+    data := map[string]interface{}{
+        "query": "machine learning applications in healthcare",
+        "filters": map[string]interface{}{
+            "documentTypes": []string{"pdf", "txt"},
+            "dateRange": map[string]string{
+                "from": "2023-01-01T00:00:00Z",
+                "to": "2024-01-01T00:00:00Z",
+            },
+        },
+        "options": map[string]interface{}{
+            "limit": 10,
+            "threshold": 0.7,
+        },
+    }
+    
+    jsonData, _ := json.Marshal(data)
+    
+    req, _ := http.NewRequest("POST", "https://api.cloudindex.com/v1/search", bytes.NewBuffer(jsonData))
+    req.Header.Set("Authorization", "Bearer your-api-key")
+    req.Header.Set("Content-Type", "application/json")
+    
+    client := &http.Client{}
+    resp, _ := client.Do(req)
+    defer resp.Body.Close()
+    
+    body, _ := ioutil.ReadAll(resp.Body)
+    // Parse body as needed
+}`
+    }
+  ]}
+/>

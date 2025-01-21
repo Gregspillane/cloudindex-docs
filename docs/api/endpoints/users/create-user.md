@@ -69,25 +69,28 @@ POST https://api.cloudindex.com/v1/users
 | 409 | User already exists |
 | 422 | Validation error |
 
-## Example
+## Code Examples
 
-### cURL
+import ApiCodeTabs from '@site/src/components/ApiCodeTabs';
 
-```bash
-curl -X POST https://api.cloudindex.com/v1/users \
-  -H "Authorization: Bearer your-api-key" \
-  -H "Content-Type: application/json" \
+<ApiCodeTabs
+  examples={[
+    {
+      language: 'bash',
+      label: 'cURL',
+      code: `curl -X POST https://api.cloudindex.com/v1/users \\
+  -H "Authorization: Bearer your-api-key" \\
+  -H "Content-Type: application/json" \\
   -d '{
     "email": "user@example.com",
     "name": "John Doe",
     "role": "user"
-  }'
-```
-
-### JavaScript
-
-```javascript
-const response = await fetch('https://api.cloudindex.com/v1/users', {
+  }'`
+    },
+    {
+      language: 'javascript',
+      label: 'Node.js',
+      code: `const response = await fetch('https://api.cloudindex.com/v1/users', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer your-api-key',
@@ -100,4 +103,60 @@ const response = await fetch('https://api.cloudindex.com/v1/users', {
   }),
 });
 
-const user = await response.json();
+const user = await response.json();`
+    },
+    {
+      language: 'python',
+      label: 'Python',
+      code: `import requests
+
+response = requests.post(
+    'https://api.cloudindex.com/v1/users',
+    headers={
+        'Authorization': 'Bearer your-api-key',
+        'Content-Type': 'application/json'
+    },
+    json={
+        'email': 'user@example.com',
+        'name': 'John Doe',
+        'role': 'user'
+    }
+)
+
+user = response.json()`
+    },
+    {
+      language: 'go',
+      label: 'Go',
+      code: `package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "io/ioutil"
+    "net/http"
+)
+
+func main() {
+    data := map[string]interface{}{
+        "email": "user@example.com",
+        "name":  "John Doe",
+        "role":  "user",
+    }
+    
+    jsonData, _ := json.Marshal(data)
+    
+    req, _ := http.NewRequest("POST", "https://api.cloudindex.com/v1/users", bytes.NewBuffer(jsonData))
+    req.Header.Set("Authorization", "Bearer your-api-key")
+    req.Header.Set("Content-Type", "application/json")
+    
+    client := &http.Client{}
+    resp, _ := client.Do(req)
+    defer resp.Body.Close()
+    
+    body, _ := ioutil.ReadAll(resp.Body)
+    // Parse body as needed
+}`
+    }
+  ]}
+/>

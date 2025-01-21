@@ -1,53 +1,74 @@
 # System Patterns
-Last Updated: 2024-01-10
 
-## High-Level Architecture
-- Static site generator architecture
-- Content separated from presentation
-- Markdown/MDX for content authoring
-- React components for UI customization
-- Dual documentation system (general docs and API reference)
-
-## Core Technical Patterns
-1. Documentation Structure
-   - Two main sections:
-     * General Documentation (/docs/docs/*)
-     * API Reference (/docs/api/*)
-   - Each section configured as separate plugin instance
-   - Independent routing paths (/docs and /api)
-   - Shared sidebar configuration file
-   - Independent navigation for each section
-
-2. Routing Patterns
-   - General documentation at /docs/*
-   - API reference at /api/*
-   - Blog at /blog
-   - Custom 404 pages
-   - Each documentation section has its own base path
-
-3. Navigation Patterns
-   - Main navigation items:
-     * Docs (root)
-     * API Documentation (/api)
-     * GitHub link
-   - Footer navigation groups
-   - Responsive mobile menu
-
-3. Component Architecture
-   - Homepage features component
-   - CSS modules for styling
-   - TypeScript for type safety
-   - Static assets in /static directory
-
-## Data Flow
-1. Markdown/MDX → Docusaurus → Static HTML
-2. React Components → Rendered Pages
-3. Static Assets → Bundled with Site
+## Architecture Overview
+- Frontend: React/Vite application
+- Backend: Node.js/Express API server
+- Database: Supabase (PostgreSQL)
+- Vector Store: Pinecone
+- Cache/Queue: Redis
+- Authentication: Clerk
 
 ## Key Technical Decisions
+
+### Frontend Architecture
+- React v18.3.1 with TypeScript
+- Zustand for state management
+- TailwindCSS for styling
+- Radix UI for accessible components
+- Vite for build tooling
+
+### Backend Architecture
+- Express framework with TypeScript
+- Service-oriented architecture
+- Versioned API routes (public/private)
+- Middleware-based request processing
+- Job queue system with Redis
+
+### Document Processing
+- LlamaIndex for document handling
+- Multiple specialized processors:
+  - LlamaParseProcessor (PDF/DOCX)
+  - SimpleNodeParser (MD/MDX)
+  - TreeSitterProcessor (code)
+  - WebProcessor (web content)
+
+### Data Integration
+- Provider-specific adapters
+- Circuit breaker pattern
+- Real-time sync capabilities
+- Batch processing with rate limiting
+
+### Security Patterns
+- Clerk-based authentication
+- Role-based access control
+- API key management
+- Row-level security in Supabase
+
+## Project Structure
+```
+cloudindex-ai/
+├── frontend/
+│   ├── src/
+│   │   ├── components/    # Feature-based components
+│   │   ├── hooks/        # Custom React hooks
+│   │   ├── services/     # API services
+│   │   ├── stores/       # State management
+│   │   └── utils/        # Utilities
+│
+├── backend/
+│   ├── src/
+│   │   ├── controllers/  # Route handlers
+│   │   ├── services/     # Business logic
+│   │   ├── routes/       # API endpoints
+│   │   └── middleware/   # Request processing
+│
+└── supabase/
+    └── migrations/       # Database schema
+```
+
+## Development Patterns
 - TypeScript for type safety
-- CSS modules for component styling
-- MDX for enhanced Markdown capabilities
-- Static site generation for performance
-- RouteBasePath configuration for docs
-- API documentation structure
+- Jest for testing
+- Nodemon for development
+- Docker for containerization
+- Supabase migrations for schema changes
