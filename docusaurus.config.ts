@@ -37,10 +37,9 @@ const config: Config = {
       {
         id: 'default',
         path: 'docs/docs',
-        routeBasePath: '/', // Make docs the root
-        sidebarPath: undefined, // Generate automatically from folder structure
+        routeBasePath: 'docs',
+        sidebarPath: undefined,
         sidebarCollapsible: true,
-        // Category index pages can be generated automatically
         async sidebarItemsGenerator({defaultSidebarItemsGenerator, ...args}) {
           const sidebarItems = await defaultSidebarItemsGenerator(args);
           return sidebarItems;
@@ -51,11 +50,10 @@ const config: Config = {
       '@docusaurus/plugin-content-docs',
       {
         id: 'api',
-        path: 'docs/api',
-        routeBasePath: 'api',
-        sidebarPath: undefined, // Generate automatically from folder structure
+        path: 'docs/api-reference',
+        routeBasePath: 'api-reference',
+        sidebarPath: undefined,
         sidebarCollapsible: true,
-        // Category index pages can be generated automatically
         async sidebarItemsGenerator({defaultSidebarItemsGenerator, ...args}) {
           const sidebarItems = await defaultSidebarItemsGenerator(args);
           return sidebarItems;
@@ -74,11 +72,7 @@ const config: Config = {
             type: ['rss', 'atom'],
             xslt: true,
           },
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
-          // Useful options to enforce blogging best practices
+          editUrl: 'https://github.com/cloudindex/cloudindex-docs/tree/main/',
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
           onUntruncatedBlogPosts: 'warn',
@@ -91,7 +85,6 @@ const config: Config = {
   ],
 
   themeConfig: {
-    // Replace with your project's social card
     image: 'img/docusaurus-social-card.jpg',
     navbar: {
       logo: {
@@ -105,17 +98,17 @@ const config: Config = {
       },
       items: [
         {
-          to: '/',
+          to: '/docs/getting-started/introduction',
           position: 'left',
           label: 'Docs',
         },
         {
-          to: '/api',
+          to: '/api-reference/introduction',
           position: 'left',
           label: 'API Reference',
         },
         {
-          href: 'https://github.com/facebook/docusaurus',
+          href: 'https://github.com/cloudindex/cloudindex-docs',
           label: 'GitHub',
           position: 'right',
         },
@@ -125,28 +118,32 @@ const config: Config = {
       style: 'dark',
       links: [
         {
-          title: 'Docs',
+          title: 'Documentation',
           items: [
             {
-              label: 'Tutorial',
-              to: '/', // Updated to reflect root path
+              label: 'Getting Started',
+              to: '/docs/getting-started/introduction',
+            },
+            {
+              label: 'API Reference',
+              to: '/api-reference/introduction',
             },
           ],
         },
         {
-          title: 'Community',
+          title: 'Resources',
           items: [
             {
-              label: 'Stack Overflow',
-              href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+              label: 'Core Concepts',
+              to: '/docs/core-concepts/rag-overview',
             },
             {
-              label: 'Discord',
-              href: 'https://discordapp.com/invite/docusaurus',
+              label: 'Guides',
+              to: '/docs/guides/document-upload',
             },
             {
-              label: 'X',
-              href: 'https://x.com/docusaurus',
+              label: 'Integrations',
+              to: '/docs/integrations/google-drive',
             },
           ],
         },
@@ -159,7 +156,7 @@ const config: Config = {
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/facebook/docusaurus',
+              href: 'https://github.com/cloudindex/cloudindex-docs',
             },
           ],
         },
