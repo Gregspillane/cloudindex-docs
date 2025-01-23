@@ -3,15 +3,62 @@ title: Query API Overview
 sidebar_position: 1
 ---
 
-# Hybrid Search
+# Query API
 
-Query documents using our hybrid search system that combines semantic search with keyword matching.
+CloudIndex's Query API provides enterprise-grade hybrid search capabilities, combining semantic understanding, keyword matching, and advanced reranking to deliver highly relevant results from your document collection.
 
-## Endpoint
+## Overview
 
-```http
-POST /public/v1/query
-```
+Our hybrid search system integrates three powerful approaches:
+
+1. **Semantic Search**
+   - Understands the meaning and context of queries
+   - Captures conceptual relationships
+   - Effective for natural language queries
+   - Handles synonyms and related concepts
+
+2. **Keyword Search**
+   - Precise text matching capabilities
+   - Excellent for specific terms and phrases
+   - Maintains search accuracy
+   - Handles technical terminology
+
+3. **Reranking**
+   - Advanced ML model for result refinement
+   - Improves result relevance
+   - Filters low-quality matches
+   - Optimizes for business context
+
+## Enterprise Features
+
+### Security & Compliance
+- API key authentication
+- Request logging for audit trails
+- Document-level access control
+- Compliance with data privacy standards
+
+### Scalability
+- High-performance architecture
+- Distributed search capabilities
+- Rate limiting for resource protection
+- Optimized for large document collections
+
+### Reliability
+- Consistent response formats
+- Comprehensive error handling
+- Detailed response metadata
+- Built-in retry mechanisms
+
+## Rate Limits
+
+Enterprise-grade rate limiting ensures reliable service:
+- Per API key: 100 requests per minute
+- Per IP: 1000 requests per hour
+
+Rate limit information in response headers:
+- `X-RateLimit-Limit`: Maximum requests per window
+- `X-RateLimit-Remaining`: Remaining requests in current window
+- `X-RateLimit-Reset`: Time when the rate limit resets (Unix timestamp)
 
 ## Request Parameters
 
@@ -39,34 +86,48 @@ The request body should be formatted as JSON with the following structure:
 | `similarityTopK` | integer | 10 | Number of top similar documents (1-100) |
 | `alpha` | number | 0.75 | Balance between semantic and keyword search (0.01-1.0) |
 | `rerankingEnabled` | boolean | false | Enable result reranking |
-| `rerankingTopN` | integer | 5 | Number of results to rerank (1-100) |
+| `rerankingTopN` | integer | 5 | Number of results to rerank (1-100, must not exceed similarityTopK) |
 | `rerankingThreshold` | number | 0.2 | Minimum reranking score (0-1) |
 | `limit` | integer | 10 | Maximum results to return (1-100) |
 | `threshold` | number | 0.0 | Minimum similarity score (0-1) |
 | `includeMetadata` | boolean | false | Include document metadata |
 | `preset` | string | "general" | Search preset configuration |
 
-## Example Request
+## Search Presets
 
-```bash
-curl -X POST "https://api.cloudindex.ai/public/v1/query" \
--H "Authorization: ApiKey your-api-key" \
--H "Content-Type: application/json" \
--d '{
-    "query": "What is RAG?",
-    "options": {
-        "similarityTopK": 10,
-        "alpha": 0.75,
-        "rerankingEnabled": true,
-        "rerankingTopN": 5,
-        "rerankingThreshold": 0.2
-    }
-}'
-```
+Enterprise-optimized presets for different use cases:
 
-## Response
+| Preset | Description | Best For |
+|--------|-------------|----------|
+| general | Balanced settings for general purpose search | Mixed content repositories |
+| business | Optimized for business documents | Reports, presentations, emails |
+| technical | Enhanced technical content matching | Documentation, code, specs |
+| financial | Specialized for financial documents | Reports, analysis, statements |
+| scientific | Configured for scientific content | Research papers, technical data |
+| custom | Use custom parameters | Specialized requirements |
 
-A successful query returns a 200 status code with a JSON response:
+## Response Format
+
+Successful queries (200 OK) return a structured JSON response:
+
+### Scored Chunks
+
+Array of matching document chunks, each containing:
+- `id`: Unique chunk identifier
+- `text`: Matching text content
+- `score`: Relevance score (0-1)
+- `document_id`: Source document ID
+- `document_name`: Source document name
+- `document_metadata`: Document metadata (when requested)
+
+### Response Metadata
+
+Search operation details:
+- `total_chunks`: Number of chunks searched
+- `processing_time_ms`: Processing duration
+- `reranking_applied`: Reranking status
+
+## Example Response
 
 ```json
 {
@@ -81,70 +142,77 @@ A successful query returns a 200 status code with a JSON response:
         "mime_type": "application/pdf",
         "created_at": "2024-01-15T12:00:00Z",
         "file_path": "docs/rag-overview.pdf",
-        "source_type": "upload"
+        "source_type": "upload",
+        "processing_status": "processed"
       }
     }
-  ]
+  ],
+  "metadata": {
+    "total_chunks": 150,
+    "processing_time_ms": 245,
+    "reranking_applied": true
+  }
 }
 ```
 
-## Response Fields
+## Enterprise Best Practices
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `scored_chunks` | array | Array of matching document chunks |
-| `scored_chunks[].id` | string | Unique chunk identifier |
-| `scored_chunks[].text` | string | Matching text content |
-| `scored_chunks[].score` | number | Relevance score (0-1) |
-| `scored_chunks[].document_id` | string | Source document ID |
-| `scored_chunks[].document_name` | string | Source document name |
-| `scored_chunks[].document_metadata` | object | Document metadata |
+### Performance Optimization
+1. **Query Design**
+   - Use concise, focused queries
+   - Include essential keywords
+   - Leverage natural language when appropriate
+   - Test queries with sample content
 
-## Error Responses
+2. **Parameter Tuning**
+   - Start with preset configurations
+   - Adjust `alpha` strategically:
+     - Higher (greater than 0.75): Semantic understanding
+     - Lower (less than 0.25): Keyword precision
+     - Middle: Balanced approach
+   - Enable reranking for critical searches
 
-| Status Code | Description |
-|-------------|-------------|
-| 400 | Bad request - invalid parameters |
-| 401 | Unauthorized - invalid API key |
-| 500 | Internal server error |
+3. **Resource Management**
+   - Implement document filters
+   - Set appropriate result limits
+   - Request metadata selectively
+   - Monitor rate limit usage
 
-### Error Response Format
+### Reranking Strategy
+1. **When to Enable**
+   - High-value content searches
+   - Accuracy-critical operations
+   - Complex semantic queries
+   - User-facing applications
 
-```json
-{
-  "code": "ERROR_CODE",
-  "category": "ERROR_CATEGORY",
-  "message": "Error description",
-  "details": {}
-}
-```
+2. **Configuration**
+   - Set `rerankingTopN` < `similarityTopK`
+   - Adjust threshold based on quality needs
+   - Balance latency vs. accuracy
+   - Monitor performance impact
 
-## Search Presets
+### Error Handling
+1. **Robust Implementation**
+   - Implement retry logic
+   - Handle all error categories
+   - Monitor rate limits
+   - Log error patterns
 
-The following presets are available for the `preset` option:
+2. **Response Processing**
+   - Validate response format
+   - Check metadata fields
+   - Handle empty results gracefully
+   - Monitor processing times
 
-| Preset | Description |
-|--------|-------------|
-| general | Balanced search for general content |
-| business | Optimized for business documents |
-| technical | Enhanced technical content matching |
-| financial | Tuned for financial documents |
-| scientific | Optimized for scientific content |
-| custom | Use custom search parameters |
+### Security Considerations
+1. **API Key Management**
+   - Rotate keys regularly
+   - Use separate keys per environment
+   - Monitor key usage
+   - Implement key restrictions
 
-## Best Practices
-
-1. **Query Length**
-   - Keep queries concise but descriptive
-   - Include relevant keywords
-   - Use natural language when appropriate
-
-2. **Search Parameters**
-   - Start with default values
-   - Adjust `alpha` based on search needs
-   - Enable reranking for better precision
-
-3. **Performance**
-   - Use filters to narrow search scope
-   - Set appropriate limits
-   - Include metadata only when needed
+2. **Request Patterns**
+   - Implement request logging
+   - Monitor unusual patterns
+   - Set up alerts
+   - Track usage metrics

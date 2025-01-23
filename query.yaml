@@ -1,0 +1,430 @@
+openapi: 3.0.0
+info:
+  title: CloudIndex AI API
+  version: '1.0.0'
+  description: |
+    API for querying documents using hybrid search and reranking.
+    
+    Authentication:
+    The API uses API key authentication. Pass your API key in the Authorization header with the "ApiKey" prefix:
+    ```
+    Authorization: ApiKey your-api-key
+    ```
+
+    Rate Limiting:
+    - Per API key: 100 requests per minute
+    - Per IP: 1000 requests per hour
+    - Rate limit headers are included in responses:
+      - X-RateLimit-Limit: Maximum requests per window
+      - X-RateLimit-Remaining: Remaining requests in current window
+      - X-RateLimit-Reset: Time when the rate limit resets (Unix timestamp)
+    
+    Example curl command:
+    ```bash
+    curl -X POST "https://api.cloudindex.ai/public/v1/query" \
+    -H "Authorization: ApiKey f79552ee-8d92-48a1-afdc-6b58c09a959e" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "query": "What is RAG?",
+        "options": {
+            "similarityTopK": 10,
+            "alpha": 0.75,
+            "rerankingEnabled": true,
+            "rerankingTopN": 5,
+            "rerankingThreshold": 0.2
+        }
+    }'
+    ```
+
+servers:
+  - url: https://api.cloudindex.ai
+    description: Production API server
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        API key authentication. 
+        The API key must be provided in the Authorization header with the "ApiKey" prefix.
+        Format: Authorization: ApiKey <your-api-key>
+        Example: Authorization: ApiKey f79552ee-8d92-48a1-afdc-6b58c09a959e
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Specific error code identifying the error
+          enum:
+            # API key errors
+            - api_key/invalid
+            - api_key/revoked
+            - api_key/expired
+            - api_key/missing
+            # Validation errors
+            - validation/invalid-input
+            - validation/missing-field
+            - validation/invalid-format
+            # System errors
+            - system/internal-error
+            - system/service-unavailable
+            - system/database-error
+            # Business errors
+            - business/not-found
+            - business/invalid-state
+            # Rate limit errors
+            - rate_limit/exceeded
+            - rate_limit/quota-exceeded
+            - rate_limit/concurrent-exceeded
+            # Permission errors
+            - permission/unauthorized
+            - permission/forbidden
+            # Version errors
+            - version/not-supported
+            - version/deprecated
+        category:
+          type: string
+          description: High-level error category
+          enum:
+            - api_key
+            - validation
+            - system
+            - business
+            - rate_limit
+            - permission
+            - version
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error context and details
+      example:
+        code: api_key/invalid
+        category: api_key
+        message: The provided API key is invalid or has been revoked
+        details:
+          suggestion: Please check your API key or generate a new one
+
+    DocumentMetadata:
+      type: object
+      properties:
+        mime_type:
+          type: string
+          example: "application/pdf"
+        created_at:
+          type: string
+          format: date-time
+        file_path:
+          type: string
+        source_type:
+          type: string
+          enum: [upload, google_drive, s3, onedrive, sharepoint, notion]
+          description: The source of the document
+        processing_status:
+          type: string
+          enum: [pending, processing, processed, failed]
+          description: Current processing status of the document
+
+    ScoredChunk:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the chunk
+        text:
+          type: string
+          description: The content of the chunk
+        score:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Relevance score of the chunk
+        document_id:
+          type: string
+          format: uuid
+          description: ID of the parent document
+        document_name:
+          type: string
+          description: Name of the parent document
+        document_metadata:
+          $ref: '#/components/schemas/DocumentMetadata'
+          description: Metadata of the parent document
+
+    QueryResponse:
+      type: object
+      properties:
+        scored_chunks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoredChunk'
+          description: Array of matching chunks with scores
+        metadata:
+          type: object
+          properties:
+            total_chunks:
+              type: integer
+              description: Total number of chunks searched
+            processing_time_ms:
+              type: integer
+              description: Time taken to process the query in milliseconds
+            reranking_applied:
+              type: boolean
+              description: Whether reranking was applied to the results
+      example:
+        scored_chunks:
+          - id: "123e4567-e89b-12d3-a456-426614174000"
+            text: "RAG (Retrieval-Augmented Generation) is a technique that..."
+            score: 0.92
+            document_id: "123e4567-e89b-12d3-a456-426614174001"
+            document_name: "rag-overview.pdf"
+            document_metadata:
+              mime_type: "application/pdf"
+              created_at: "2024-01-15T12:00:00Z"
+              file_path: "docs/rag-overview.pdf"
+              source_type: "upload"
+              processing_status: "processed"
+        metadata:
+          total_chunks: 150
+          processing_time_ms: 245
+          reranking_applied: true
+
+paths:
+  /public/v1/query:
+    post:
+      summary: Query documents using hybrid search
+      description: |
+        Performs a hybrid search across documents using both semantic and keyword search,
+        with optional reranking capabilities.
+
+        The hybrid search combines:
+        1. Semantic search: Uses embeddings to find semantically similar content
+        2. Keyword search: Uses traditional text matching
+        3. Optional reranking: Further refines results using a cross-attention model
+
+        The `alpha` parameter controls the balance between semantic and keyword search:
+        - alpha = 1.0: Pure semantic search
+        - alpha = 0.0: Pure keyword search
+        - alpha = 0.5: Equal weight to both
+
+        Reranking can significantly improve result quality but adds latency.
+        When enabled, it:
+        1. Takes the top K results from hybrid search
+        2. Applies a more sophisticated model to rerank them
+        3. Filters results below the reranking threshold
+        
+        Example:
+        ```bash
+        curl -X POST "https://api.cloudindex.ai/public/v1/query" \
+        -H "Authorization: ApiKey f79552ee-8d92-48a1-afdc-6b58c09a959e" \
+        -H "Content-Type: application/json" \
+        -d '{
+            "query": "What is RAG?",
+            "options": {
+                "similarityTopK": 10,
+                "alpha": 0.75,
+                "rerankingEnabled": true,
+                "rerankingTopN": 5,
+                "rerankingThreshold": 0.2
+            }
+        }'
+        ```
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+                  description: The search query text
+                  example: "What is RAG?"
+                filters:
+                  type: object
+                  description: Optional filters to narrow search results
+                  properties:
+                    documentIds:
+                      type: array
+                      description: Limit search to specific document IDs
+                      items:
+                        type: string
+                        format: uuid
+                    types:
+                      type: array
+                      description: Limit search to specific file types
+                      items:
+                        type: string
+                        enum: [pdf, txt, md, mdx, doc, docx]
+                    dateRange:
+                      type: object
+                      description: Filter by document creation date
+                      properties:
+                        from:
+                          type: string
+                          format: date-time
+                          description: Start date (ISO 8601 format)
+                        to:
+                          type: string
+                          format: date-time
+                          description: End date (ISO 8601 format)
+                options:
+                  type: object
+                  description: Optional search configuration
+                  properties:
+                    similarityTopK:
+                      type: integer
+                      minimum: 1
+                      maximum: 100
+                      default: 10
+                      description: Number of top similar documents to retrieve
+                      example: 10
+                    alpha:
+                      type: number
+                      minimum: 0.01
+                      maximum: 1
+                      default: 0.75
+                      description: Balance between semantic and keyword search (higher values favor semantic search)
+                      example: 0.75
+                    rerankingEnabled:
+                      type: boolean
+                      default: false
+                      description: Whether to enable reranking of search results
+                      example: true
+                    rerankingTopN:
+                      type: integer
+                      minimum: 1
+                      maximum: 100
+                      description: |
+                        Number of top results to rerank.
+                        Must not exceed similarityTopK if both are specified.
+                      example: 5
+                    rerankingThreshold:
+                      type: number
+                      minimum: 0
+                      maximum: 1
+                      default: 0.2
+                      description: Minimum score threshold for reranked results
+                      example: 0.2
+                    limit:
+                      type: integer
+                      minimum: 1
+                      maximum: 100
+                      default: 10
+                      description: Maximum number of results to return
+                    threshold:
+                      type: number
+                      minimum: 0
+                      maximum: 1
+                      default: 0.0
+                      description: Minimum similarity score threshold
+                    includeMetadata:
+                      type: boolean
+                      default: false
+                      description: Whether to include document metadata in results
+                    preset:
+                      type: string
+                      enum: [general, business, technical, financial, scientific, custom]
+                      default: general
+                      description: |
+                        Preset configuration for search behavior:
+                        * general: Balanced settings for general purpose search
+                        * business: Optimized for business documents
+                        * technical: Tuned for technical documentation
+                        * financial: Specialized for financial documents
+                        * scientific: Configured for scientific papers
+                        * custom: Use custom parameters
+      responses:
+        '200':
+          description: Successful query response
+          headers:
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Maximum requests per window
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: Remaining requests in current window
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Time when the rate limit resets (Unix timestamp)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+        '400':
+          description: Bad request - invalid input parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                validation_error:
+                  value:
+                    code: validation/invalid-input
+                    category: validation
+                    message: Invalid input parameters provided
+                    details:
+                      errors:
+                        - field: options.rerankingTopN
+                          message: Cannot exceed similarityTopK value
+                version_error:
+                  value:
+                    code: version/not-supported
+                    category: version
+                    message: This API version is not supported
+                    details:
+                      supported_versions: ["v1"]
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: api_key/invalid
+                category: api_key
+                message: The provided API key is invalid or has been revoked
+        '429':
+          description: Too many requests - rate limit exceeded
+          headers:
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Time when the rate limit resets (Unix timestamp)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: rate_limit/exceeded
+                category: rate_limit
+                message: Rate limit exceeded
+                details:
+                  limit: 100
+                  reset_at: 1623456789
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: system/internal-error
+                category: system
+                message: An unexpected error occurred
+                details:
+                  request_id: "req_abc123"
