@@ -1,51 +1,53 @@
 # Active Context
 
 ## Current Focus
-- API documentation interactive features and user experience improvements
+- API documentation accuracy and enterprise-grade improvements
+- Aligning documentation with OpenAPI specification
 
 ## Recent Changes
-1. Implemented file upload functionality in API playground:
-   - Added drag-and-drop file upload interface
-   - Support for multiple file selection
-   - File type validation (.pdf, .doc, .docx, .txt, .md)
-   - Visual feedback for drag states
-   - File list with remove options
+1. Updated Documents API documentation:
+   - Aligned POST_upload-document.md with OpenAPI spec
+   - Updated GET_list-documents.md for accuracy
+   - Enhanced GET_get-document.md with complete schema
+   - Revised DELETE_delete-document.md for enterprise focus
+   - Removed GET_document-versions.md endpoint
 
-2. Enhanced API playground response handling:
-   - Added success/error status indicators
-   - Implemented success notifications with checkmark icon
-   - Custom success messages for different operations
-   - Improved response layout and organization
-   - Color-coded status badges (green/red)
+2. Documentation Improvements:
+   - Added comprehensive file format support details
+   - Enhanced error response documentation
+   - Standardized status terminology (using "processed")
+   - Added processor type descriptions
+   - Expanded best practices sections
 
-3. Updated code examples for file uploads:
-   - curl: Uses -F for proper multipart/form-data
-   - Python: Uses files parameter with open()
-   - JavaScript: Uses FormData for file handling
-   - Go: Uses multipart.Writer for file encoding
+3. Enterprise Focus Enhancements:
+   - Added compliance considerations
+   - Improved data governance guidance
+   - Enhanced security recommendations
+   - Added audit trail requirements
+   - Included resource management strategies
 
 ## Next Steps for Next LLM
-1. Further API playground improvements:
-   - Add loading indicators for file uploads
-   - Implement upload progress tracking
-   - Add file size validation
-   - Enhance error handling with more specific messages
-   - Add retry functionality for failed uploads
+1. Query API Documentation Updates:
+   - Review and align with OpenAPI spec
+   - Enhance hybrid search documentation
+   - Add vector operation details
+   - Include reranking information
+   - Update best practices
 
-2. Documentation updates:
-   - Add file upload best practices section
-   - Document supported file types and size limits
-   - Include examples for batch uploads
-   - Add troubleshooting guide for common issues
+2. Documentation Structure:
+   - Ensure consistent terminology
+   - Verify all status codes
+   - Check error response formats
+   - Validate schema references
 
-3. Technical Implementation:
-   - Consider chunked uploads for large files
-   - Add client-side file validation
-   - Improve error recovery mechanisms
-   - Add upload cancellation support
+3. Enterprise Considerations:
+   - Add performance optimization guides
+   - Include scaling recommendations
+   - Enhance security documentation
+   - Add compliance guidelines
 
 4. User Experience:
-   - Add tooltips for file requirements
-   - Improve drag-and-drop visual feedback
-   - Add file type icons in file list
-   - Enhance mobile responsiveness
+   - Verify example accuracy
+   - Enhance code samples
+   - Improve parameter descriptions
+   - Add use case examples
