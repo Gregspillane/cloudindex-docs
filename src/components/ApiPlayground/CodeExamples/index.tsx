@@ -31,6 +31,19 @@ interface CodeExamplesProps {
   paramValues: Record<string, string>;
 }
 
+const getUrlWithPathParams = (basePath: string, endpoint: ApiEndpoint, paramValues?: Record<string, string>): string => {
+  let url = basePath;
+  if (endpoint.parameters.path) {
+    Object.entries(endpoint.parameters.path).forEach(([name, param]) => {
+      const value = paramValues?.[`path.${name}`];
+      if (value) {
+        url = url.replace(`{${name}}`, encodeURIComponent(value));
+      }
+    });
+  }
+  return url;
+};
+
 const convertValue = (value: string | undefined, type: string): any => {
   if (!value) return undefined;
   
@@ -63,8 +76,8 @@ const generateCurlExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: st
   // Add method
   parts.push(`-X ${endpoint.method}`);
   
-  // Add headers
-  parts.push('-H "Content-Type: application/json"');
+  // Add headers for multipart/form-data
+  parts.push('-H "Content-Type: multipart/form-data"');
   if (apiKey && endpoint.authentication) {
     if (endpoint.authentication.type === 'apiKey') {
       parts.push(`-H "Authorization: ApiKey ${apiKey}"`);
@@ -73,8 +86,8 @@ const generateCurlExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: st
     }
   }
   
-  // Add URL
-  let url = `${baseUrl}${endpoint.path}`;
+  // Add URL with path parameters
+  const url = getUrlWithPathParams(`${baseUrl}${endpoint.path}`, endpoint, paramValues);
   parts.push(`"${url}"`);
   
   // Add body if POST/PUT
@@ -104,9 +117,13 @@ const generateCurlExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: st
       }
       return acc;
     }, {} as Record<string, any>);
-    // Format JSON with double quotes for valid JSON, wrapped in single quotes for shell
-    const jsonBody = JSON.stringify(bodyData).replace(/'/g, "'\\''"); // Escape single quotes
-    parts.push(`-d '${jsonBody}'`);
+    // Add file upload using -F for form data
+    Object.entries(bodyData).forEach(([key, value]) => {
+      if (value && typeof value === 'string') {
+        // Assuming it's a file path, use @ to specify file upload
+        parts.push(`-F "${key}=@${value}"`);
+      }
+    });
   }
   
   return parts.join(' \\\n  ');
@@ -115,15 +132,14 @@ const generateCurlExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: st
 const generatePythonExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: string, paramValues?: Record<string, string>): string => {
   const lines: string[] = [
     'import requests',
+    'import os',
     '',
-    `url = "${baseUrl}${endpoint.path}"`,
+    `url = "${getUrlWithPathParams(`${baseUrl}${endpoint.path}`, endpoint, paramValues)}"`,
     ''
   ];
   
-  // Add headers
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json'
-  };
+  // Add headers without Content-Type (requests will set it automatically for files)
+  const headers: Record<string, string> = {};
   
   if (apiKey && endpoint.authentication) {
     if (endpoint.authentication.type === 'apiKey') {
@@ -163,14 +179,20 @@ const generatePythonExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: 
       return acc;
     }, {} as Record<string, any>);
     lines.push('');
-    lines.push('data = ' + JSON.stringify(bodyData));
+    lines.push('files = {');
+    Object.entries(bodyData).forEach(([key, value]) => {
+      if (value && typeof value === 'string') {
+        lines.push(`    '${key}': open('${value}', 'rb'),`);
+      }
+    });
+    lines.push('}');
   }
   
   // Add request
   lines.push('');
   const requestLine = `response = requests.${endpoint.method.toLowerCase()}(url`;
   if ((endpoint.method === 'POST' || endpoint.method === 'PUT') && endpoint.parameters.body) {
-    lines.push(`${requestLine}, headers=headers, json=data)`);
+    lines.push(`${requestLine}, headers=headers, files=files)`);
   } else {
     lines.push(`${requestLine}, headers=headers)`);
   }
@@ -182,8 +204,7 @@ const generateJavaScriptExample = (endpoint: ApiEndpoint, baseUrl: string, apiKe
   const lines: string[] = [
     'const options = {',
     `  method: '${endpoint.method}',`,
-    '  headers: {',
-    "    'Content-Type': 'application/json',"
+    '  headers: {'
   ];
   
   if (apiKey && endpoint.authentication) {
@@ -221,12 +242,19 @@ const generateJavaScriptExample = (endpoint: ApiEndpoint, baseUrl: string, apiKe
       }
       return acc;
     }, {} as Record<string, any>);
-    lines.push('  body: JSON.stringify(' + JSON.stringify(bodyData) + '),');
+    // Handle file upload using FormData
+    lines.push('const formData = new FormData();');
+    Object.entries(bodyData).forEach(([key, value]) => {
+      if (value && typeof value === 'string') {
+        lines.push(`formData.append('${key}', new File([''], '${value.split('/').pop()}', { type: 'application/octet-stream' }));`);
+      }
+    });
+    lines.push('  body: formData,');
   }
   
   lines.push('};');
   lines.push('');
-  lines.push(`fetch('${baseUrl}${endpoint.path}', options)`);
+  lines.push(`fetch('${getUrlWithPathParams(`${baseUrl}${endpoint.path}`, endpoint, paramValues)}', options)`);
   lines.push('  .then(response => response.json())');
   lines.push('  .then(data => console.log(data))');
   lines.push('  .catch(error => console.error(error));');
@@ -239,8 +267,9 @@ const generateGoExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: stri
     'package main',
     '',
     'import (',
-    '    "bytes"',
-    '    "encoding/json"',
+    '    "io"',
+    '    "mime/multipart"',
+    '    "os"',
     '    "fmt"',
     '    "net/http"',
     ')',
@@ -250,33 +279,38 @@ const generateGoExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: stri
   
   // Add body if POST/PUT
   if ((endpoint.method === 'POST' || endpoint.method === 'PUT') && endpoint.parameters.body) {
-    const bodyData = Object.entries(endpoint.parameters.body).reduce((acc, [key, param]) => {
+    // Create multipart form data
+    lines.push('    body := &bytes.Buffer{}');
+    lines.push('    writer := multipart.NewWriter(body)');
+    lines.push('');
+    
+    // Add file fields
+    Object.entries(endpoint.parameters.body).forEach(([key, param]) => {
       const value = paramValues?.[`body.${key}`];
-      if (value !== undefined && value !== '') {
-        acc[key] = convertValue(value, param.type);
-      } else {
-        switch (param.type.toLowerCase()) {
-          case 'boolean':
-            acc[key] = false;
-            break;
-          case 'number':
-          case 'integer':
-            acc[key] = 0;
-            break;
-          case 'array':
-            acc[key] = [];
-            break;
-          case 'object':
-            acc[key] = {};
-            break;
-          default:
-            acc[key] = `<${param.type}>`;
-        }
+      if (value && typeof value === 'string') {
+        lines.push(`    file, err := os.Open("${value}")`);
+        lines.push('    if err != nil {');
+        lines.push('        fmt.Println("Error:", err)');
+        lines.push('        return');
+        lines.push('    }');
+        lines.push('    defer file.Close()');
+        lines.push('');
+        lines.push(`    part, err := writer.CreateFormFile("${key}", "${value.split('/').pop()}")`);
+        lines.push('    if err != nil {');
+        lines.push('        fmt.Println("Error:", err)');
+        lines.push('        return');
+        lines.push('    }');
+        lines.push('');
+        lines.push('    _, err = io.Copy(part, file)');
+        lines.push('    if err != nil {');
+        lines.push('        fmt.Println("Error:", err)');
+        lines.push('        return');
+        lines.push('    }');
       }
-      return acc;
-    }, {} as Record<string, any>);
-    lines.push(`    data := ${JSON.stringify(bodyData)}`);
-    lines.push('    jsonData, err := json.Marshal(data)');
+    });
+    
+    lines.push('');
+    lines.push('    err := writer.Close()');
     lines.push('    if err != nil {');
     lines.push('        fmt.Println("Error:", err)');
     lines.push('        return');
@@ -284,9 +318,10 @@ const generateGoExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: stri
     lines.push('');
   }
   
-  lines.push(`    req, err := http.NewRequest("${endpoint.method}", "${baseUrl}${endpoint.path}", `);
+  const url = getUrlWithPathParams(`${baseUrl}${endpoint.path}`, endpoint, paramValues);
+  lines.push(`    req, err := http.NewRequest("${endpoint.method}", "${url}", `);
   if ((endpoint.method === 'POST' || endpoint.method === 'PUT') && endpoint.parameters.body) {
-    lines.push('        bytes.NewBuffer(jsonData))');
+    lines.push('        body)');
   } else {
     lines.push('        nil)');
   }
@@ -298,7 +333,7 @@ const generateGoExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: stri
   lines.push('');
   
   // Add headers
-  lines.push('    req.Header.Set("Content-Type", "application/json")');
+  lines.push('    req.Header.Set("Content-Type", writer.FormDataContentType())');
   if (apiKey && endpoint.authentication) {
     if (endpoint.authentication.type === 'apiKey') {
       lines.push(`    req.Header.Set("Authorization", "ApiKey ${apiKey}")`);

@@ -65,13 +65,26 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
     }
   }, []);
 
+  const getUrlWithPathParams = useCallback((basePath: string) => {
+    let url = basePath;
+    if (endpoint.parameters.path) {
+      Object.entries(endpoint.parameters.path).forEach(([name, param]) => {
+        const value = paramValues[`path.${name}`];
+        if (value) {
+          url = url.replace(`{${name}}`, encodeURIComponent(value));
+        }
+      });
+    }
+    return url;
+  }, [endpoint.parameters.path, paramValues]);
+
   const handleSubmit = useCallback(async () => {
     setError(null);
     setResponse(null);
     setIsLoading(true);
 
     try {
-      let url = `${baseUrl}${endpoint.path}`;
+      let url = getUrlWithPathParams(`${baseUrl}${endpoint.path}`);
       
       if (endpoint.parameters.query) {
         const queryParams = Object.entries(endpoint.parameters.query)
@@ -87,9 +100,7 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
         }
       }
 
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
+      const headers: Record<string, string> = {};
 
       if (endpoint.authentication) {
         if (!apiKey) {
@@ -102,23 +113,29 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
         }
       }
 
-      let body: string | undefined;
+      let formData: FormData | undefined;
       if ((endpoint.method === 'POST' || endpoint.method === 'PUT') && endpoint.parameters.body) {
-        const bodyData = Object.entries(endpoint.parameters.body).reduce((acc, [name, param]) => {
+        formData = new FormData();
+        Object.entries(endpoint.parameters.body).forEach(([name, param]) => {
           const value = paramValues[`body.${name}`];
-          if (value || param.required) {
-            acc[name] = value;
+          if (value) {
+            // For file type parameters, create a File object
+            if (param.type === 'file' || param.type === 'file[]') {
+              // Create a mock File object since we can't access the real file in the playground
+              formData!.append(name, new File([''], value.split('/').pop() || value, {
+                type: 'application/octet-stream'
+              }));
+            } else {
+              formData!.append(name, value);
+            }
           }
-          return acc;
-        }, {} as Record<string, any>);
-        
-        body = JSON.stringify(bodyData, null, 2);
+        });
       }
 
       const response = await fetch(url, {
         method: endpoint.method,
         headers,
-        body
+        body: formData
       });
 
       if (!response.ok) {
