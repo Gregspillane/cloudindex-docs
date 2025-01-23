@@ -1,91 +1,132 @@
 # Technical Context
 
-## Development Environment
-- Node.js (v14 or later)
-- npm
-- Docker and Docker Compose
-- Supabase CLI
-- Redis
+## Technology Stack
 
-## Required API Keys
-- OpenAI API key
-- Anthropic API key (optional)
-- Pinecone API key and environment
-- LlamaCloud API key
-- Cohere API key
-- Clerk account (with Organizations)
-- Google Cloud Platform account
-- AWS account
-- Slack API credentials
-- Notion API credentials
-- Microsoft Azure account
+### Core Technologies
+- React 18
+- TypeScript 5
+- Docusaurus 3
+- CSS Modules
 
-## Environment Variables
-```bash
-# Authentication
-CLERK_SECRET_KEY=
-CLERK_PUBLISHABLE_KEY=
+### Development Tools
+- Node.js
+- npm/yarn
+- VSCode
+- ESLint/Prettier
 
-# Database
-SUPABASE_URL=
-SUPABASE_SERVICE_KEY=
+## Development Setup
 
-# Vector Store
-PINECONE_API_KEY=
-PINECONE_ENVIRONMENT=
-PINECONE_INDEX_NAME=
-
-# AI/ML
-OPENAI_API_KEY=
-ANTHROPIC_API_KEY=
-LLAMA_CLOUD_API_KEY=
-COHERE_API_KEY=
-
-# Infrastructure
-REDIS_URL=
-FRONTEND_URL=
-
-# Integrations
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-SLACK_CLIENT_ID=
-SLACK_CLIENT_SECRET=
-NOTION_CLIENT_ID=
-NOTION_CLIENT_SECRET=
-ONEDRIVE_CLIENT_ID=
-ONEDRIVE_CLIENT_SECRET=
+### Project Structure
+```
+cloudindex-docs/
+├── src/
+│   ├── components/
+│   │   └── ApiPlayground/
+│   │       ├── index.tsx
+│   │       ├── styles.module.css
+│   │       └── CodeExamples/
+│   ├── theme/
+│   │   ├── DocPage/
+│   │   └── DocItem/
+│   └── css/
+│       └── custom.css
+└── docs/
+    └── api-reference/
 ```
 
-## API Endpoints
-- Production: https://api.cloudindex.ai
-- Development: http://localhost:3000/api
+### Component Architecture
+1. Theme Customization
+   - Custom DocPage component
+   - Custom DocItem layout
+   - Right sidebar integration
 
-## Development Setup Steps
+2. API Playground
+   - Main playground component
+   - Code examples subcomponent
+   - Language selection
+   - Request/Response handling
+
+### Styling System
+1. CSS Modules
+   - Scoped component styles
+   - Global theme variables
+   - Responsive design system
+
+2. Theme Integration
+   - Docusaurus theme customization
+   - Dark mode support
+   - Custom color schemes
+
+## Technical Constraints
+
+### Browser Support
+- Modern browsers (Chrome, Firefox, Safari, Edge)
+- ES6+ JavaScript features
+- CSS Grid and Flexbox
+- Local Storage API
+
+### Performance Requirements
+- Fast initial load time
+- Smooth interactions
+- Efficient API calls
+- Responsive layout
+
+### Security Considerations
+- API key handling
+- CORS compliance
+- Secure data transmission
+- Input validation
+
+## Development Workflow
+
+### Setup Instructions
 1. Clone repository
-2. Set up environment variables
-3. Start Redis via Docker
-4. Initialize Supabase
-5. Run migrations
-6. Start development servers
+2. Install dependencies
+3. Configure environment
+4. Start development server
 
-## Version Requirements
-### Frontend
-- React: v18.3.1
-- Vite: v5.4.8
-- TailwindCSS: v3.4.14
-- TypeScript: v5.5.3
+### Build Process
+1. TypeScript compilation
+2. CSS processing
+3. Asset optimization
+4. Documentation generation
 
-### Backend
-- Node.js: v18.x
-- Express: v4.21.0
-- LlamaIndex: v0.7.0
-- OpenAI SDK: v4.0.0
-- Anthropic SDK: v0.32.1
+### Testing Strategy
+1. Component testing
+2. Integration testing
+3. API endpoint testing
+4. Responsive design testing
 
-### Infrastructure
-- Supabase Client: v2.46.1
-- Pinecone: v3.0.3
-- Redis (ioredis): v5.4.1
-- Clerk: v5.12.0 (Frontend), v5.0.0 (Backend)
+## Deployment
+
+### Build Configuration
+- Production optimization
+- Asset minification
+- Code splitting
+- Cache management
+
+### Environment Variables
+- API endpoints
+- Authentication settings
+- Feature flags
+- Debug options
+
+### Monitoring
+- Error tracking
+- Performance metrics
+- Usage analytics
+- API response times
+
+## Maintenance
+
+### Regular Tasks
+- Dependency updates
+- Security patches
+- Performance optimization
+- Documentation updates
+
+### Troubleshooting
+- Console logging
+- Network inspection
+- State debugging
+- Style debugging
