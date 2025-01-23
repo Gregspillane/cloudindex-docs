@@ -9,7 +9,7 @@ interface Parameter {
   description: string;
 }
 
-interface ApiEndpoint {
+export interface ApiEndpoint {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   path: string;
   parameters: {
@@ -34,6 +34,7 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
   const [response, setResponse] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [paramValues, setParamValues] = useState<Record<string, string>>({});
   const [apiKey, setApiKey] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -140,12 +141,18 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
+      <div className={styles.header} onClick={() => setIsCollapsed(!isCollapsed)}>
         <div className={styles.method}>{endpoint.method}</div>
         <div className={styles.path}>{endpoint.path}</div>
+        <div className={styles.toggleButton}>
+          <svg width="16" height="16" viewBox="0 0 24 24" className={`${styles.arrow} ${isCollapsed ? styles.collapsed : ''}`}>
+            <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+          </svg>
+        </div>
       </div>
 
-      <div className={styles.content}>
+      {!isCollapsed && (
+        <div className={styles.content}>
         <div className={styles.languageTabs}>
           {languages.map(lang => (
             <button
@@ -244,6 +251,7 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

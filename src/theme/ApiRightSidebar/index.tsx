@@ -1,47 +1,63 @@
-import React from 'react';
-import { useLocation } from '@docusaurus/router';
+import React, { useState, useEffect } from 'react';
+import clsx from 'clsx';
 import styles from './styles.module.css';
-
-interface TocItem {
-  id: string;
-  value: string;
-  level: number;
-}
+import ApiPlayground from '@site/src/components/ApiPlayground';
+import type { ApiEndpoint } from '@site/src/components/ApiPlayground';
 
 export default function ApiRightSidebar(): JSX.Element {
-  const location = useLocation();
-  const [sections, setSections] = React.useState<TocItem[]>([]);
+  const [isExpanded, setIsExpanded] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('playgroundExpanded');
+      return saved ? saved === 'true' : true;
+    }
+    return true;
+  });
 
-  React.useEffect(() => {
-    // Get all h2 and h3 elements from the content
-    const headings = Array.from(document.querySelectorAll('h2, h3')).map(heading => ({
-      id: heading.id,
-      value: heading.textContent || '',
-      level: parseInt(heading.tagName[1])
-    }));
-    setSections(headings);
-  }, [location.pathname]);
-
-  if (sections.length === 0) {
-    return null;
-  }
+  useEffect(() => {
+    localStorage.setItem('playgroundExpanded', String(isExpanded));
+  }, [isExpanded]);
 
   return (
-    <div className={styles.rightSidebar}>
-      <div className={styles.sidebarInner}>
-        <div className={styles.tocHeader}>On This Page</div>
-        <nav className={styles.tocNav}>
-          {sections.map((section) => (
-            <a
-              key={section.id}
-              href={`#${section.id}`}
-              className={`${styles.tocLink} ${section.level === 3 ? styles.tocLinkNested : ''}`}
-            >
-              {section.value}
-            </a>
-          ))}
-        </nav>
-      </div>
+    <div className={clsx(styles.sidebarContainer, {
+      [styles.collapsed]: !isExpanded
+    })}>
+      <button
+        className={styles.toggleButton}
+        onClick={() => setIsExpanded(!isExpanded)}
+        aria-label={isExpanded ? "Collapse API playground" : "Expand API playground"}
+      >
+        <svg className={styles.chevron} viewBox="0 0 24 24">
+          <path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+        </svg>
+      </button>
+      {isExpanded && <ApiPlayground 
+        endpoint={{
+          method: 'POST',
+          path: '/chat/threads/create',
+          parameters: {
+            body: {
+              messages: {
+                name: 'messages',
+                type: 'array',
+                required: true,
+                description: 'Array of initial messages in the thread'
+              },
+              metadata: {
+                name: 'metadata',
+                type: 'object',
+                required: false,
+                description: 'Optional key-value pairs for thread metadata'
+              }
+            }
+          },
+          authentication: {
+            type: 'bearer',
+            location: 'header'
+          }
+        }}
+        baseUrl="https://api.cloudindex.io/v1"
+        languages={['curl', 'javascript', 'python']}
+      />}
     </div>
   );
 }

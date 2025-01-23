@@ -12,6 +12,45 @@
   padding: 0.75rem;
   background-color: var(--ifm-background-surface-color);
   border-bottom: 1px solid var(--ifm-color-emphasis-300);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+  padding-right: 2rem;
+}
+
+.header:hover {
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+.toggleButton {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background-color: transparent;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  border: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.toggleButton:hover {
+  background-color: var(--ifm-color-emphasis-100);
+  border-color: var(--ifm-color-primary);
+}
+
+.arrow {
+  transition: transform 0.2s ease;
+  color: var(--ifm-color-primary);
+  width: 20px;
+  height: 20px;
+}
+
+.arrow.collapsed {
+  transform: rotate(-90deg);
 }
 
 .method {
