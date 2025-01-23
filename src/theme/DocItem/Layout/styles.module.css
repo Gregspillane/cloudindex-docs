@@ -1,0 +1,61 @@
+.docItemContainer {
+  display: flex;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.docItemCol {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+}
+
+.docItemWrapper {
+  padding: 1rem var(--ifm-spacing-horizontal);
+}
+
+/* API page specific styles */
+.apiPage {
+  max-width: calc(100% - 300px);
+  margin-right: 300px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 996px) {
+  .apiPage {
+    max-width: 100%;
+    margin-right: 0;
+  }
+}
+
+/* Ensure proper spacing */
+:global(.container) {
+  max-width: none !important;
+  padding: 0 !important;
+}
+
+/* Fix main wrapper padding */
+:global(.main-wrapper) {
+  width: 100%;
+  max-width: none;
+}
+
+/* Hide default right sidebar */
+:global(.theme-doc-toc-desktop) {
+  display: none;
+}
+
+/* Adjust main content width */
+:global(.theme-doc-markdown) {
+  max-width: none !important;
+}
+
+/* Ensure proper spacing in API reference pages */
+:global(.row) {
+  margin: 0;
+}
+
+:global(.col) {
+  padding: 0;
+}

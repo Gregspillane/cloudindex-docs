@@ -15,6 +15,9 @@
   --ifm-color-primary-lightest: #3cad6e;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --ifm-toc-border-color: var(--ifm-color-emphasis-200);
+  --ifm-navbar-height: 60px;
+  --ifm-global-shadow-lw: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
@@ -27,4 +30,158 @@
   --ifm-color-primary-lighter: #32d8b4;
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  --ifm-toc-border-color: var(--ifm-color-emphasis-200);
+}
+
+/* API Reference specific styles */
+.api-reference-page {
+  --doc-sidebar-width: 300px;
+  --doc-sidebar-hidden-width: 30px;
+}
+
+/* Adjust main wrapper layout */
+.main-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Remove default container max-width */
+.container {
+  max-width: none !important;
+  padding: 0 !important;
+}
+
+/* Hide default right sidebar */
+.theme-doc-toc-desktop {
+  display: none;
+}
+
+/* Adjust main content width */
+.theme-doc-markdown {
+  max-width: none !important;
+}
+
+/* Ensure proper spacing in API reference pages */
+.row {
+  margin: 0;
+}
+
+.col {
+  padding: 0;
+}
+
+/* Improve code block readability */
+.prism-code {
+  background-color: var(--ifm-pre-background) !important;
+  margin: 0;
+  padding: 1rem;
+  font-size: 0.9rem;
+  overflow: auto;
+  border-radius: 6px;
+}
+
+/* Enhance table styles */
+table {
+  display: table;
+  width: 100%;
+  margin: 1rem 0;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.75rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+}
+
+th {
+  background-color: var(--ifm-color-emphasis-100);
+  font-weight: 600;
+}
+
+/* Improve heading hierarchy */
+h1 {
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+}
+
+h2 {
+  font-size: 1.8rem;
+  margin-top: 3rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+}
+
+h3 {
+  font-size: 1.4rem;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+/* Enhance list readability */
+ul,
+ol {
+  padding-left: 1.5rem;
+}
+
+li {
+  margin: 0.5rem 0;
+}
+
+/* Improve inline code readability */
+code {
+  background-color: var(--ifm-color-emphasis-100);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* Add spacing between sections */
+section {
+  margin-bottom: 3rem;
+}
+
+/* Enhance blockquote styling */
+blockquote {
+  border-left: 4px solid var(--ifm-color-primary);
+  background-color: var(--ifm-color-emphasis-100);
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 996px) {
+  .theme-doc-sidebar-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--doc-sidebar-width);
+    transform: translateX(-100%);
+    transition: transform 0.2s;
+  }
+
+  .theme-doc-sidebar-container.sidebar-shown {
+    transform: translateX(0);
+  }
+}
+
+/* Smooth scrolling for the whole page */
+:global(html) {
+  scroll-behavior: smooth;
+}
+
+/* Ensure proper spacing in API reference pages */
+.api-reference-page .theme-doc-markdown {
+  padding: 2rem;
+  max-width: calc(100% - 300px) !important;
+}
+
+@media (max-width: 996px) {
+  .api-reference-page .theme-doc-markdown {
+    padding: 1rem;
+    max-width: 100% !important;
+  }
 }

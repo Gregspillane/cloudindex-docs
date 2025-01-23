@@ -1,0 +1,79 @@
+.docPage {
+  display: flex;
+  width: 100%;
+  max-width: var(--ifm-container-width);
+  margin: 0 auto;
+  position: relative;
+}
+
+.mainContent {
+  flex: 1;
+  min-width: 0;
+  max-width: calc(100% - 300px);
+  padding: 0;
+}
+
+.rightSidebar {
+  position: fixed;
+  top: var(--ifm-navbar-height);
+  right: 0;
+  width: 300px;
+  height: calc(100vh - var(--ifm-navbar-height));
+  overflow-y: auto;
+  background: var(--ifm-background-surface-color);
+  border-left: 1px solid var(--ifm-toc-border-color);
+  z-index: 100;
+}
+
+/* Responsive adjustments */
+@media (max-width: 996px) {
+  .mainContent {
+    max-width: 100%;
+  }
+
+  .rightSidebar {
+    display: none;
+  }
+}
+
+/* Ensure proper spacing */
+:global(.container) {
+  max-width: none !important;
+  padding: 0 !important;
+}
+
+/* Fix main wrapper padding */
+:global(.main-wrapper) {
+  width: 100%;
+  max-width: none;
+}
+
+/* Hide default right sidebar */
+:global(.theme-doc-toc-desktop) {
+  display: none;
+}
+
+/* Adjust main content width */
+:global(.theme-doc-markdown) {
+  max-width: none !important;
+}
+
+/* Ensure proper spacing in API reference pages */
+:global(.row) {
+  margin: 0;
+}
+
+:global(.col) {
+  padding: 0;
+}
+
+/* Dark mode adjustments */
+[data-theme='dark'] .rightSidebar {
+  border-left-color: var(--ifm-toc-border-color);
+  background: var(--ifm-background-surface-color);
+}
+
+/* Smooth scrolling for the whole page */
+:global(html) {
+  scroll-behavior: smooth;
+}

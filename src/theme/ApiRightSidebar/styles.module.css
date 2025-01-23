@@ -1,0 +1,73 @@
+.rightSidebar {
+  position: fixed;
+  top: calc(var(--ifm-navbar-height) + 2rem);
+  right: 0;
+  bottom: 0;
+  width: 300px;
+  overflow-y: auto;
+  padding: 1rem;
+  background: var(--ifm-background-surface-color);
+  border-left: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.sidebarInner {
+  padding: 0 0.5rem;
+}
+
+.tocHeader {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--ifm-color-emphasis-700);
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.tocNav {
+  display: flex;
+  flex-direction: column;
+}
+
+.tocLink {
+  display: block;
+  padding: 0.4rem 0.5rem 0.4rem 1rem;
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.8rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border-left: 2px solid transparent;
+  line-height: 1.4;
+}
+
+.tocLink:hover {
+  background-color: var(--ifm-menu-color-background-active);
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.tocLink.active {
+  background-color: var(--ifm-menu-color-background-active);
+  border-left-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary);
+}
+
+.tocLinkNested {
+  padding-left: 2rem;
+  font-size: 0.75rem;
+}
+
+/* Adjust main content to make room for right sidebar */
+:global(.main-wrapper) {
+  padding-right: 300px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 996px) {
+  .rightSidebar {
+    display: none;
+  }
+  
+  :global(.main-wrapper) {
+    padding-right: 0;
+  }
+}
