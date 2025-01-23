@@ -5,147 +5,154 @@ sidebar_position: 2
 
 # Stateless Chat
 
-Send a single message for stateless chat interaction without maintaining conversation history.
+Send one-off messages without maintaining conversation history.
 
-## Request
+## Endpoint
 
 ```http
 POST /chat/messages
 ```
 
-### Headers
-
-```json
-{
-  "Authorization": "Bearer YOUR_API_KEY",
-  "Content-Type": "application/json"
-}
-```
-
-### Request Body
+## Request Body
 
 ```json
 {
   "message": "string",
-  "projectId": "string",
-  "options": {
-    "model": "string",
-    "temperature": "number",
-    "maxTokens": "number",
-    "includeContext": "boolean",
-    "filters": {
-      "documentIds": "string[]",
-      "types": "string[]",
-      "dateRange": {
-        "from": "string",
-        "to": "string"
-      }
-    }
-  }
+  "include_sources": boolean,
+  "stream": boolean
 }
 ```
 
-### Parameters
+### Fields
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `message` | string | Yes | The chat message text |
-| `projectId` | string | Yes | ID of the project to chat with |
-| `options` | object | No | Chat configuration options |
-| `options.model` | string | No | LLM model to use (default: "gpt-4") |
-| `options.temperature` | number | No | Response creativity (0-1, default: 0.7) |
-| `options.maxTokens` | number | No | Maximum response length (default: 1000) |
-| `options.includeContext` | boolean | No | Include source context in response (default: false) |
-| `options.filters` | object | No | Document filtering options |
-| `options.filters.documentIds` | string[] | No | Filter by specific document IDs |
-| `options.filters.types` | string[] | No | Filter by document types |
-| `options.filters.dateRange` | object | No | Filter by document creation date |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `message` | string | Yes | The message to send |
+| `include_sources` | boolean | No | Include document references (default: false) |
+| `stream` | boolean | No | Enable response streaming |
 
 ## Response
 
+### Standard Response
+Content-Type: application/json
+
 ```json
 {
-  "response": "string",
-  "context": [
+  "message": {
+    "id": "msg_abc123",
+    "role": "assistant",
+    "content": "string",
+    "created_at": "2024-01-22T10:00:00Z"
+  },
+  "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0
+  },
+  "scored_chunks": [
     {
-      "documentId": "string",
       "content": "string",
+      "score": 0.95,
       "metadata": {
-        "title": "string",
-        "type": "string",
-        "createdAt": "string"
+        "document_id": "string",
+        "document_name": "string",
+        "type": "document"
       }
     }
-  ],
-  "usage": {
-    "promptTokens": "number",
-    "completionTokens": "number",
-    "totalTokens": "number"
-  }
+  ]
 }
 ```
 
-### Response Fields
-
-| Name | Type | Description |
-|------|------|-------------|
-| `response` | string | AI-generated response text |
-| `context` | array | Source context used (if requested) |
-| `context[].documentId` | string | ID of source document |
-| `context[].content` | string | Relevant content snippet |
-| `context[].metadata` | object | Document metadata |
-| `usage` | object | Token usage statistics |
-
-## Example
-
-### Request
-
-```bash
-curl -X POST https://api.cloudindex.ai/chat/messages \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "What are the key features of your product?",
-    "projectId": "proj_456def",
-    "options": {
-      "model": "gpt-4",
-      "temperature": 0.7,
-      "includeContext": true
-    }
-  }'
-```
-
-### Response
+### Streaming Response
+Content-Type: text/event-stream
 
 ```json
 {
-  "response": "CloudIndex offers several key features: 1) Advanced document processing with support for multiple formats, 2) Hybrid search combining semantic and keyword matching, 3) Real-time chat capabilities with document context...",
-  "context": [
-    {
-      "documentId": "doc_123abc",
-      "content": "CloudIndex is a powerful document processing and search platform...",
-      "metadata": {
-        "title": "Product Overview",
-        "type": "md",
-        "createdAt": "2024-01-20T10:00:00Z"
-      }
-    }
-  ],
-  "usage": {
-    "promptTokens": 245,
-    "completionTokens": 156,
-    "totalTokens": 401
+  "type": "connected|error|end",
+  "error": "string",
+  "response": "string",
+  "scored_chunks": [],
+  "metadata": {
+    "processing_time": 0,
+    "node_count": 0
   }
 }
 ```
 
-## Error Codes
+## Response Headers
 
-| Code | Description |
-|------|-------------|
-| 400 | Invalid request parameters |
-| 401 | Invalid or missing API key |
-| 403 | Insufficient permissions |
-| 404 | Project not found |
-| 429 | Rate limit exceeded |
-| 500 | LLM service error |
+| Header | Description |
+|--------|-------------|
+| `X-Request-ID` | Unique request identifier |
+| `X-Model` | LLM model used (e.g., "anthropic-claude-3-sonnet-20240229") |
+| `X-Provider` | LLM provider used (e.g., "anthropic") |
+| `X-RateLimit-Limit` | Rate limit ceiling |
+| `X-RateLimit-Remaining` | Remaining requests |
+| `X-RateLimit-Reset` | Rate limit reset timestamp |
+
+## Error Responses
+
+### 400 Bad Request
+Invalid input parameters
+
+```json
+{
+  "error": "Invalid input parameters",
+  "code": "validation_error",
+  "category": "validation",
+  "details": {
+    "message": "Message content is required"
+  }
+}
+```
+
+### 401 Unauthorized
+Authentication error
+
+```json
+{
+  "error": "Invalid API key",
+  "code": "invalid_api_key",
+  "category": "authentication",
+  "details": {
+    "reason": "The provided API key does not exist"
+  }
+}
+```
+
+### 429 Rate Limit Exceeded
+
+```json
+{
+  "error": "Rate limit exceeded",
+  "code": "rate_limit_exceeded",
+  "category": "rate_limit"
+}
+```
+
+## Best Practices
+
+1. **Message Content**
+   - Keep messages clear and focused
+   - Consider token limits
+   - Use appropriate formatting
+
+2. **Source References**
+   - Enable only when needed
+   - Consider performance impact
+   - Handle source metadata appropriately
+
+3. **Streaming**
+   - Use for long responses
+   - Handle connection errors
+   - Implement proper client-side buffering
+
+4. **Error Handling**
+   - Implement proper retry logic
+   - Handle rate limits appropriately
+   - Log relevant error details
+
+5. **Performance**
+   - Monitor token usage
+   - Track response times
+   - Optimize request frequency

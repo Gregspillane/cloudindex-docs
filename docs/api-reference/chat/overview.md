@@ -5,70 +5,108 @@ sidebar_position: 1
 
 # Chat API Overview
 
-The Chat API enables real-time conversational interactions with documents in your CloudIndex projects. It supports both stateless and thread-based chat modes.
+The CloudIndex Chat API enables real-time conversational interactions with your document knowledge base. It provides comprehensive thread management, message handling, and streaming capabilities.
 
 ## Chat Modes
 
-### Stateless Chat
-- Single-turn conversations
-- No context preservation
-- Ideal for simple queries
+### 1. Stateless Mode
+- Single message interactions
+- No conversation history maintained
+- Ideal for simple question-answer scenarios
 - Lower latency and resource usage
+- Independent request processing
 
-### Thread-based Chat
-- Multi-turn conversations
-- Maintains conversation history
-- Context-aware responses
-- Supports complex interactions
+### 2. Thread Mode
+- Persistent conversation management
+- Maintains context across messages
+- Up to 10 messages in context window
+- Source document tracking
+- System prompt customization
 
-## Message Processing
+## Key Features
 
-When a chat message is received, CloudIndex:
-1. Processes the message text
-2. Retrieves relevant document context
-3. Generates embeddings
-4. Performs RAG operations
-5. Returns AI-generated response
+### Thread Management
+- Create and manage conversation threads
+- Track message history
+- Configure thread-specific settings
+- Star/archive functionality
+- Custom display ordering
 
-## Common Message Schema
+### Source References
+- Optional document source tracking
+- Relevance scores for references
+- Metadata inclusion options
+- Configurable source inclusion
 
-```json
-{
-  "message": "string",
-  "projectId": "string",
-  "options": {
-    "model": "string",
-    "temperature": "number",
-    "maxTokens": "number",
-    "includeContext": "boolean"
-  }
-}
+### LLM Integration
+- Support for multiple providers:
+  - OpenAI
+  - Anthropic
+  - Additional configured providers
+- Organization-level model selection
+- Provider-specific optimizations
+
+### System Prompts
+Configure response behavior at multiple levels:
+
+1. **Thread Level**
+   - Custom prompts per conversation
+   - Thread-specific behavior
+   - Overrides project defaults
+
+2. **Project Level**
+   - Default prompts for all threads
+   - Project-wide consistency
+   - Common use case optimization
+
+3. **System Level**
+   - Default fallback behavior
+   - Standard response patterns
+   - Base configuration
+
+## Performance Considerations
+
+### Token Usage
+- Context window limits
+- Source reference impact
+- Optimization strategies
+- Usage tracking
+
+### Response Times
+- Streaming capabilities
+- Processing time tracking
+- Performance metrics
+- Response optimization
+
+## Base URL
+```
+https://api.cloudindex.ai/public/v1
 ```
 
-## Available Endpoints
-
-### Thread-based Chat
-- [Create Thread](/api-reference/chat/threads/create-thread)
-- [List Threads](/api-reference/chat/threads/list-threads)
-- [Delete Thread](/api-reference/chat/threads/delete-thread)
-- [Send Message](/api-reference/chat/threads/send-message)
-- [Message History](/api-reference/chat/threads/message-history)
-
-### Stateless Chat
-- [Send Message](/api-reference/chat/stateless-chat)
+## Authentication
+All endpoints require API key authentication:
+```http
+Authorization: ApiKey your-api-key
+```
 
 ## Best Practices
 
-### Message Optimization
-- Keep messages focused and clear
-- Use natural language
-- Include specific references when needed
+1. **Mode Selection**
+   - Use stateless mode for simple queries
+   - Use thread mode for complex conversations
+   - Consider token usage requirements
 
-### Thread Management
-- Create new threads for distinct topics
-- Delete unused threads to free resources
-- Use thread metadata for organization
+2. **Source References**
+   - Enable only when needed
+   - Consider performance impact
+   - Use selective source inclusion
 
-### Rate Limits
-- Standard tier: 10 messages per minute
-- Enterprise tier: Custom limits available
+3. **System Prompts**
+   - Start with project-level defaults
+   - Customize for specific use cases
+   - Keep prompts focused and clear
+
+4. **Performance**
+   - Monitor token usage
+   - Use streaming for long responses
+   - Implement proper error handling

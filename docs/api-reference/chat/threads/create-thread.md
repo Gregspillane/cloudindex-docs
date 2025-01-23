@@ -5,156 +5,133 @@ sidebar_position: 1
 
 # Create Thread
 
-Create a new chat thread for maintaining conversation history.
+Create a new chat thread for persistent conversation with your document knowledge base.
 
-## Request
+## Base URL
+
+```
+https://api.cloudindex.ai/public/v1
+```
+
+## Endpoint
 
 ```http
 POST /chat/threads
 ```
 
-### Headers
+## Full URL
+
+```http
+POST https://api.cloudindex.ai/public/v1/chat/threads
+```
+
+## Description
+
+Creates a new chat thread that maintains conversation history and context. Thread settings like source inclusion and system prompts can be configured at creation time.
+
+## Request Body
 
 ```json
 {
-  "Authorization": "Bearer YOUR_API_KEY",
-  "Content-Type": "application/json"
+  "includeSources": false,
+  "systemPrompt": "You are a helpful AI assistant..."
 }
 ```
 
-### Request Body
+### Fields
 
-```json
-{
-  "projectId": "string",
-  "metadata": {
-    "title": "string",
-    "description": "string",
-    "tags": "string[]"
-  },
-  "options": {
-    "model": "string",
-    "temperature": "number",
-    "maxTokens": "number",
-    "filters": {
-      "documentIds": "string[]",
-      "types": "string[]",
-      "dateRange": {
-        "from": "string",
-        "to": "string"
-      }
-    }
-  }
-}
-```
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `includeSources` | boolean | No | Controls whether responses include source references. Impacts token usage and response size. |
+| `systemPrompt` | string | No | Custom system prompt for the thread. Overrides project-level defaults. |
 
-### Parameters
+### Source Inclusion Effects
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `projectId` | string | Yes | ID of the project to create thread in |
-| `metadata` | object | No | Thread metadata |
-| `metadata.title` | string | No | Thread title |
-| `metadata.description` | string | No | Thread description |
-| `metadata.tags` | string[] | No | Thread tags for organization |
-| `options` | object | No | Thread configuration options |
-| `options.model` | string | No | Default LLM model (default: "gpt-4") |
-| `options.temperature` | number | No | Default creativity (0-1, default: 0.7) |
-| `options.maxTokens` | number | No | Default max tokens (default: 1000) |
-| `options.filters` | object | No | Default document filters |
+When `includeSources` is enabled:
+- Responses include `scored_chunks` array with relevant excerpts
+- Each chunk includes content, score, and metadata
+- Higher token usage (typically 60-70% more)
+- Larger response payload size
+
+When disabled:
+- Minimal response structure
+- Lower token usage
+- Faster processing time
+- Smaller response payload
 
 ## Response
 
 ```json
 {
-  "threadId": "string",
-  "projectId": "string",
-  "metadata": {
-    "title": "string",
-    "description": "string",
-    "tags": "string[]"
-  },
-  "options": {
-    "model": "string",
-    "temperature": "number",
-    "maxTokens": "number",
-    "filters": {
-      "documentIds": "string[]",
-      "types": "string[]",
-      "dateRange": {
-        "from": "string",
-        "to": "string"
-      }
-    }
-  },
-  "messageCount": "number",
-  "createdAt": "string",
-  "updatedAt": "string"
+  "id": "thread_abc123",
+  "projectId": "proj_xyz789",
+  "status": "active",
+  "isStarred": false,
+  "displayOrder": 0,
+  "createdAt": "2024-01-22T10:00:00Z",
+  "lastActiveAt": "2024-01-22T10:00:00Z",
+  "totalMessages": 0,
+  "totalTokens": 0,
+  "averageResponseTime": 0,
+  "includeSources": false,
+  "systemPrompt": "string"
 }
 ```
 
 ### Response Fields
 
-| Name | Type | Description |
-|------|------|-------------|
-| `threadId` | string | Unique thread identifier |
-| `projectId` | string | Associated project ID |
-| `metadata` | object | Thread metadata |
-| `options` | object | Thread configuration |
-| `messageCount` | number | Number of messages (0 for new thread) |
-| `createdAt` | string | Thread creation timestamp |
-| `updatedAt` | string | Last update timestamp |
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique thread identifier |
+| `projectId` | string | Project identifier |
+| `status` | string | Thread status (active/archived) |
+| `isStarred` | boolean | Whether thread is starred |
+| `displayOrder` | integer | UI display order |
+| `createdAt` | string | Creation timestamp |
+| `lastActiveAt` | string | Last activity timestamp |
+| `totalMessages` | integer | Total message count |
+| `totalTokens` | integer | Total tokens used |
+| `averageResponseTime` | number | Average response time (ms) |
+| `includeSources` | boolean | Source inclusion setting |
+| `systemPrompt` | string | Custom system prompt |
 
-## Example
+## Error Responses
 
-### Request
+| Status Code | Description |
+|-------------|-------------|
+| 400 | Invalid request parameters |
+| 401 | Invalid API key |
+| 429 | Rate limit exceeded |
 
-```bash
-curl -X POST https://api.cloudindex.ai/chat/threads \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "projectId": "proj_456def",
-    "metadata": {
-      "title": "Product Features Discussion",
-      "description": "Chat about CloudIndex features",
-      "tags": ["features", "product"]
-    },
-    "options": {
-      "model": "gpt-4",
-      "temperature": 0.7
-    }
-  }'
-```
-
-### Response
+### Example Error Response
 
 ```json
 {
-  "threadId": "thread_abc123",
-  "projectId": "proj_456def",
-  "metadata": {
-    "title": "Product Features Discussion",
-    "description": "Chat about CloudIndex features",
-    "tags": ["features", "product"]
-  },
-  "options": {
-    "model": "gpt-4",
-    "temperature": 0.7,
-    "maxTokens": 1000
-  },
-  "messageCount": 0,
-  "createdAt": "2024-01-22T16:00:00Z",
-  "updatedAt": "2024-01-22T16:00:00Z"
+  "error": "Invalid system prompt",
+  "code": "validation_error",
+  "category": "validation",
+  "details": {
+    "message": "System prompt exceeds maximum length"
+  }
 }
 ```
 
-## Error Codes
+## Best Practices
 
-| Code | Description |
-|------|-------------|
-| 400 | Invalid request parameters |
-| 401 | Invalid or missing API key |
-| 403 | Insufficient permissions |
-| 404 | Project not found |
-| 429 | Rate limit exceeded |
+1. **System Prompts**
+   - Keep prompts clear and focused
+   - Test prompts with sample queries
+   - Consider token limits
+   - Use project defaults when possible
+
+2. **Source References**
+   - Enable only when needed
+   - Consider performance implications
+   - Plan for increased token usage
+   - Handle source metadata appropriately
+
+3. **Performance**
+   - Monitor token usage
+   - Track response times
+   - Consider rate limits
+   - Implement proper error handling

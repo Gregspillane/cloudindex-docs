@@ -3,57 +3,148 @@ title: Query API Overview
 sidebar_position: 1
 ---
 
-# Query API Overview
+# Hybrid Search
 
-The Query API enables you to search through your documents using CloudIndex's hybrid search capabilities, combining semantic search with keyword matching for optimal results.
+Query documents using our hybrid search system that combines semantic search with keyword matching.
 
-## Query Types
+## Endpoint
 
-CloudIndex supports the following query types:
-- Semantic Search
-- Keyword Search
-- Hybrid Search (default)
+```http
+POST /public/v1/query
+```
 
-## Query Processing
+## Request Parameters
 
-When a query is received, CloudIndex:
-1. Processes the query text
-2. Generates embeddings
-3. Performs vector similarity search
-4. Applies keyword filtering
-5. Returns ranked results
+The request body should be formatted as JSON with the following structure:
 
-## Common Query Schema
+### Required Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `query` | string | The search query text (1-1000 characters) |
+
+### Optional Fields
+
+#### Filters Object
+| Field | Type | Description |
+|-------|------|-------------|
+| `documentIds` | string[] | Array of document IDs to search within |
+| `types` | string[] | Document types to include (pdf, txt, md, mdx, doc, docx) |
+| `dateRange.from` | string | Start date (ISO 8601 format) |
+| `dateRange.to` | string | End date (ISO 8601 format) |
+
+#### Options Object
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `similarityTopK` | integer | 10 | Number of top similar documents (1-100) |
+| `alpha` | number | 0.75 | Balance between semantic and keyword search (0.01-1.0) |
+| `rerankingEnabled` | boolean | false | Enable result reranking |
+| `rerankingTopN` | integer | 5 | Number of results to rerank (1-100) |
+| `rerankingThreshold` | number | 0.2 | Minimum reranking score (0-1) |
+| `limit` | integer | 10 | Maximum results to return (1-100) |
+| `threshold` | number | 0.0 | Minimum similarity score (0-1) |
+| `includeMetadata` | boolean | false | Include document metadata |
+| `preset` | string | "general" | Search preset configuration |
+
+## Example Request
+
+```bash
+curl -X POST "https://api.cloudindex.ai/public/v1/query" \
+-H "Authorization: ApiKey your-api-key" \
+-H "Content-Type: application/json" \
+-d '{
+    "query": "What is RAG?",
+    "options": {
+        "similarityTopK": 10,
+        "alpha": 0.75,
+        "rerankingEnabled": true,
+        "rerankingTopN": 5,
+        "rerankingThreshold": 0.2
+    }
+}'
+```
+
+## Response
+
+A successful query returns a 200 status code with a JSON response:
 
 ```json
 {
-  "query": "example search query",
-  "projectId": "proj_456def",
-  "options": {
-    "limit": 10,
-    "threshold": 0.7,
-    "searchType": "hybrid",
-    "includeMetadata": true
-  }
+  "scored_chunks": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "text": "RAG (Retrieval-Augmented Generation) is a technique that...",
+      "score": 0.92,
+      "document_id": "123e4567-e89b-12d3-a456-426614174001",
+      "document_name": "rag-overview.pdf",
+      "document_metadata": {
+        "mime_type": "application/pdf",
+        "created_at": "2024-01-15T12:00:00Z",
+        "file_path": "docs/rag-overview.pdf",
+        "source_type": "upload"
+      }
+    }
+  ]
 }
 ```
 
-## Available Endpoints
+## Response Fields
 
-- [Hybrid Search](/api-reference/query/hybrid-search) - Execute hybrid search queries
+| Field | Type | Description |
+|-------|------|-------------|
+| `scored_chunks` | array | Array of matching document chunks |
+| `scored_chunks[].id` | string | Unique chunk identifier |
+| `scored_chunks[].text` | string | Matching text content |
+| `scored_chunks[].score` | number | Relevance score (0-1) |
+| `scored_chunks[].document_id` | string | Source document ID |
+| `scored_chunks[].document_name` | string | Source document name |
+| `scored_chunks[].document_metadata` | object | Document metadata |
+
+## Error Responses
+
+| Status Code | Description |
+|-------------|-------------|
+| 400 | Bad request - invalid parameters |
+| 401 | Unauthorized - invalid API key |
+| 500 | Internal server error |
+
+### Error Response Format
+
+```json
+{
+  "code": "ERROR_CODE",
+  "category": "ERROR_CATEGORY",
+  "message": "Error description",
+  "details": {}
+}
+```
+
+## Search Presets
+
+The following presets are available for the `preset` option:
+
+| Preset | Description |
+|--------|-------------|
+| general | Balanced search for general content |
+| business | Optimized for business documents |
+| technical | Enhanced technical content matching |
+| financial | Tuned for financial documents |
+| scientific | Optimized for scientific content |
+| custom | Use custom search parameters |
 
 ## Best Practices
 
-### Query Optimization
-- Keep queries concise and specific
-- Use natural language
-- Include relevant keywords
+1. **Query Length**
+   - Keep queries concise but descriptive
+   - Include relevant keywords
+   - Use natural language when appropriate
 
-### Performance
-- Default limit is 10 results
-- Adjust threshold based on relevance needs
-- Enable metadata only when needed
+2. **Search Parameters**
+   - Start with default values
+   - Adjust `alpha` based on search needs
+   - Enable reranking for better precision
 
-### Rate Limits
-- Standard tier: 10 queries per second
-- Enterprise tier: Custom limits available
+3. **Performance**
+   - Use filters to narrow search scope
+   - Set appropriate limits
+   - Include metadata only when needed
