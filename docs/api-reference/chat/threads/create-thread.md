@@ -3,27 +3,40 @@ title: Create Thread
 sidebar_position: 1
 ---
 
+import ApiPlayground from '@site/src/components/ApiPlayground';
+
 # Create Thread
 
 Create a new chat thread for persistent conversation with your document knowledge base.
 
-## Base URL
-
-```
-https://api.cloudindex.ai/public/v1
-```
-
-## Endpoint
-
-```http
-POST /chat/threads
-```
-
-## Full URL
-
-```http
-POST https://api.cloudindex.ai/public/v1/chat/threads
-```
+<ApiPlayground
+  endpoint={{
+    method: 'POST',
+    path: '/chat/threads',
+    parameters: {
+      body: {
+        includeSources: {
+          name: 'includeSources',
+          type: 'boolean',
+          required: false,
+          description: "Controls whether responses include source references. When enabled, responses include document excerpts with relevance scores. When disabled (default), responses are minimal without sources."
+        },
+        systemPrompt: {
+          name: 'systemPrompt',
+          type: 'string',
+          required: false,
+          description: 'Custom system prompt for the thread. Overrides project-level defaults.'
+        }
+      }
+    },
+    authentication: {
+      type: 'apiKey',
+      location: 'header'
+    }
+  }}
+  baseUrl="https://api.cloudindex.ai/public/v1"
+  languages={['curl', 'python', 'javascript', 'go']}
+/>
 
 ## Description
 
@@ -61,20 +74,23 @@ When disabled:
 
 ## Response
 
+The response follows the `ThreadResponse` schema:
+
 ```json
 {
-  "id": "thread_abc123",
-  "projectId": "proj_xyz789",
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "projectId": "123e4567-e89b-12d3-a456-426614174000",
   "status": "active",
   "isStarred": false,
   "displayOrder": 0,
   "createdAt": "2024-01-22T10:00:00Z",
   "lastActiveAt": "2024-01-22T10:00:00Z",
+  "metadata": {},
   "totalMessages": 0,
   "totalTokens": 0,
   "averageResponseTime": 0,
   "includeSources": false,
-  "systemPrompt": "string"
+  "systemPrompt": "You are a helpful AI assistant..."
 }
 ```
 
@@ -82,18 +98,19 @@ When disabled:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | string | Unique thread identifier |
-| `projectId` | string | Project identifier |
-| `status` | string | Thread status (active/archived) |
+| `id` | string (uuid) | Unique thread identifier |
+| `projectId` | string (uuid) | Project identifier |
+| `status` | string (enum) | Thread status: "active" or "archived" |
 | `isStarred` | boolean | Whether thread is starred |
-| `displayOrder` | integer | UI display order |
-| `createdAt` | string | Creation timestamp |
-| `lastActiveAt` | string | Last activity timestamp |
+| `displayOrder` | integer | Display order for UI |
+| `createdAt` | string (date-time) | Thread creation timestamp |
+| `lastActiveAt` | string (date-time) | Last activity timestamp |
+| `metadata` | object | Additional thread metadata |
 | `totalMessages` | integer | Total message count |
 | `totalTokens` | integer | Total tokens used |
-| `averageResponseTime` | number | Average response time (ms) |
-| `includeSources` | boolean | Source inclusion setting |
-| `systemPrompt` | string | Custom system prompt |
+| `averageResponseTime` | number | Average response time in ms |
+| `includeSources` | boolean | Whether to include sources in responses |
+| `systemPrompt` | string | Custom system prompt for thread |
 
 ## Error Responses
 

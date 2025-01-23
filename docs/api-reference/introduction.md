@@ -12,7 +12,7 @@ Welcome to the CloudIndex API documentation. This guide will help you integrate 
 The CloudIndex API is organized around REST principles. We use standard HTTP response codes, authentication, and verbs. All requests should be made to the base URL:
 
 ```bash
-https://api.cloudindex.ai/v1
+https://api.cloudindex.ai/public/v1
 ```
 
 ## Authentication
