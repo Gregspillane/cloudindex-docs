@@ -1,0 +1,394 @@
+openapi: 3.0.0
+info:
+  title: CloudIndex Documents API
+  version: '1.0.0'
+  description: |
+    The CloudIndex Documents API enables uploading and managing documents for RAG applications.
+
+    ## Document Upload
+    - Maximum 20 files per request
+    - Maximum file size: 20MB
+    - Supported formats:
+      - Documents:
+        - Office: PDF, DOC, DOCX, RTF, TXT, ODT, PAGES
+        - OpenDocument: ODT, ABW, SXW, STW, SXG
+        - Legacy: WPD, WPS, LWP, HWP
+        - Web: HTML, HTM, XML
+      - Spreadsheets:
+        - Office: XLS, XLSX, XLSM, XLSB, CSV, TSV
+        - OpenDocument: ODS, FODS, NUMBERS
+        - Legacy: DIF, SYLK, DBF, WKS
+      - Presentations:
+        - Office: PPT, PPTX, PPTM
+        - Templates: POT, POTM, POTX
+        - OpenDocument: ODP, KEY
+      - Code:
+        - Web: JS, JSX, TS, TSX
+        - Systems: PY, GO, JAVA, CSHARP, RUST
+        - Data: SQL
+        - Shell: SH, BASH
+      - Web/Config:
+        - Styles: CSS, SCSS, SASS
+        - Templates: EJS, TMPL
+        - Config: YAML, ENV, CONF
+      - Markdown:
+        - MD, MDX
+      - Notes:
+        - Notion documents and databases
+
+servers:
+  - url: https://api.cloudindex.ai/public/v1
+    description: Production API endpoint
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'API key with format: ApiKey YOUR_API_KEY'
+
+  schemas:
+    Document:
+      type: object
+      required:
+        - id
+        - projectId
+        - fileName
+        - processingStatus
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique document identifier
+        projectId:
+          type: string
+          format: uuid
+          description: Project identifier
+        fileName:
+          type: string
+          description: Original file name
+        fileType:
+          type: string
+          description: |
+            Detected file type. Common types include:
+            Documents: PDF Document, Word Document, Rich Text Document
+            Spreadsheets: Excel Spreadsheet, CSV File
+            Presentations: PowerPoint Presentation
+            Code: JavaScript File, TypeScript File, Python File, Go File
+            Web: HTML File, CSS File
+            Config: YAML File, Environment File
+            Markdown: Markdown Document, MDX Document
+            Notes: Notion Document
+        uploadDate:
+          type: string
+          format: date-time
+          description: Upload timestamp
+        processingStatus:
+          type: string
+          enum: [pending, processing, processed, failed]
+          description: Current processing status
+        fileSize:
+          type: integer
+          description: File size in bytes
+        retryCount:
+          type: integer
+          description: Number of processing retry attempts
+        errorMessage:
+          type: string
+          description: Error message if processing failed
+        processing_time:
+          type: integer
+          description: Processing duration in milliseconds
+        chunkCount:
+          type: integer
+          description: Number of chunks generated
+        processorType:
+          type: string
+          enum: [basic, llama-parse, code, tree-sitter, note]
+          description: |
+            Type of processor used for content extraction:
+            - basic: Simple text extraction
+            - llama-parse: Advanced document parsing (PDF, Office docs)
+            - code: TypeScript/JavaScript parsing
+            - tree-sitter: Advanced code parsing (Python, Go, etc.)
+            - note: Note-specific parsing (Notion)
+        version:
+          type: integer
+          description: Document version number
+        contentHash:
+          type: string
+          description: SHA-256 hash of document content
+        lastModified:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+        processingStartedAt:
+          type: string
+          format: date-time
+          description: Processing start timestamp
+        processingCompletedAt:
+          type: string
+          format: date-time
+          description: Processing completion timestamp
+
+    Error:
+      type: object
+      required:
+        - error
+        - code
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Machine-readable error code
+
+paths:
+  /projects/{projectId}/documents:
+    post:
+      summary: Upload documents
+      description: Upload one or more documents for processing
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                documents:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Files to upload (max 20)
+      responses:
+        '200':
+          description: Documents uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: Document identifier
+                        fileName:
+                          type: string
+                          description: Name of the uploaded file
+                        status:
+                          type: string
+                          enum: [pending, processing, processed, failed]
+                          description: Initial processing status
+                        uploadedAt:
+                          type: string
+                          format: date-time
+                          description: Upload timestamp
+                        version:
+                          type: integer
+                          description: Document version number
+                  errors:
+                    type: array
+                    description: Array of any upload errors
+                    items:
+                      type: object
+                  batch:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: Batch processing identifier
+                      status:
+                        type: string
+                        enum: [pending, processing, completed, failed]
+                        description: Batch status
+                      totalFiles:
+                        type: integer
+                        description: Total number of files in batch
+                      progress:
+                        type: integer
+                        description: Processing progress (0-100)
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: List documents
+      description: Get a list of all documents in the project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Document'
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/{projectId}/documents/{documentId}:
+    get:
+      summary: Get document details
+      description: Get details for a specific document
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document:
+                    $ref: '#/components/schemas/Document'
+                  processingJobs:
+                    type: array
+                    description: List of processing jobs for this document
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: Processing job identifier
+                        batchId:
+                          type: string
+                          format: uuid
+                          description: Batch identifier
+                        status:
+                          type: string
+                          enum: [pending, processing, completed, failed]
+                          description: Processing job status
+                        processorType:
+                          type: string
+                          description: Type of processor used
+                        processingMetadata:
+                          type: object
+                          description: Additional processing metadata
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete document
+      description: Delete a specific document
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Success message
+        '401':
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
