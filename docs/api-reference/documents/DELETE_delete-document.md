@@ -40,7 +40,12 @@ Delete a specific document from the project.
 
 ## Description
 
-Permanently delete a document from your project. This operation removes the document's content, metadata, and all associated vectors. This action cannot be undone.
+Permanently delete a document from your project. This operation:
+- Removes the document's content, metadata, and all associated vectors
+- Deletes all processing history and version information
+- Cannot be undone - consider archiving if permanent deletion is not required
+- May have compliance and audit implications in regulated environments
+- Could affect downstream systems or applications using this document
 
 ## Request
 
@@ -57,16 +62,7 @@ A successful deletion returns a confirmation message:
 
 ```json
 {
-  "success": true,
-  "message": "Document deleted successfully",
-  "details": {
-    "documentId": "550e8400-e29b-41d4-a716-446655440000",
-    "deletedAt": "2024-01-22T10:00:00Z",
-    "resourcesFreed": {
-      "vectorStorage": 1500000,
-      "textStorage": 25000
-    }
-  }
+  "message": "Document deleted successfully"
 }
 ```
 
@@ -74,14 +70,7 @@ A successful deletion returns a confirmation message:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `success` | boolean | Whether deletion was successful |
-| `message` | string | Human-readable status message |
-| `details` | object | Additional deletion details |
-| `details.documentId` | string (UUID) | ID of deleted document |
-| `details.deletedAt` | string (date-time) | Deletion timestamp |
-| `details.resourcesFreed` | object | Resources released by deletion |
-| `details.resourcesFreed.vectorStorage` | integer | Vector storage freed (bytes) |
-| `details.resourcesFreed.textStorage` | integer | Text storage freed (bytes) |
+| `message` | string | Success confirmation message |
 
 ## Error Responses
 
@@ -90,51 +79,61 @@ A successful deletion returns a confirmation message:
 | 400 | Invalid request parameters |
 | 401 | Invalid API key |
 | 404 | Document or project not found |
-| 409 | Document is being processed |
 | 429 | Rate limit exceeded |
+| 500 | Server error |
 
 ### Example Error Response
 
 ```json
 {
-  "error": "Document in use",
-  "code": "document_locked",
-  "category": "conflict",
+  "error": "Document not found",
+  "code": "document_not_found",
   "details": {
-    "message": "Document is currently being processed and cannot be deleted",
-    "retryAfter": "2024-01-22T10:01:00Z"
+    "message": "The specified document does not exist or you don't have access"
   }
 }
 ```
 
 ## Best Practices
 
-1. **Confirmation**
-   - Implement confirmation dialogs
-   - Verify document ownership
-   - Check document status
-   - Consider soft deletion
+1. **Data Governance**
+   - Implement deletion approval workflows
+   - Maintain comprehensive audit logs
+   - Consider regulatory requirements
+   - Document deletion rationale
+   - Verify compliance obligations
 
 2. **Resource Management**
-   - Track freed resources
-   - Update storage quotas
-   - Clean up related data
-   - Monitor deletion jobs
+   - Track downstream dependencies
+   - Update related indexes
+   - Clean up associated resources
+   - Monitor system impact
+   - Verify deletion completion
 
 3. **Error Handling**
-   - Handle 404 gracefully
-   - Respect processing locks
+   - Validate document state
+   - Handle errors gracefully
    - Implement proper retries
-   - Update UI immediately
+   - Log deletion attempts
+   - Monitor failure patterns
 
-4. **Data Consistency**
-   - Remove from search indexes
-   - Clean up vector storage
-   - Update document counts
-   - Maintain audit logs
+4. **Recovery Procedures**
+   - Consider backup requirements
+   - Document recovery processes
+   - Maintain deletion logs
+   - Plan for rollback scenarios
+   - Test recovery procedures
 
 5. **User Experience**
-   - Show loading states
-   - Provide undo options
-   - Display success messages
-   - Update document lists
+   - Require confirmation
+   - Show clear warnings
+   - Display progress indicators
+   - Provide status updates
+   - Handle UI state changes
+
+6. **Enterprise Considerations**
+   - Assess business impact
+   - Follow change management
+   - Update documentation
+   - Consider legal implications
+   - Maintain deletion records

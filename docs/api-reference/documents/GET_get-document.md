@@ -61,42 +61,34 @@ The response follows the `DocumentDetails` schema:
     "id": "550e8400-e29b-41d4-a716-446655440000",
     "projectId": "123e4567-e89b-12d3-a456-426614174000",
     "fileName": "example.pdf",
-    "processingStatus": "completed",
+    "fileType": "PDF Document",
+    "processingStatus": "processed",
     "fileSize": 1024000,
-    "mimeType": "application/pdf",
-    "uploadedAt": "2024-01-22T10:00:00Z",
-    "completedAt": "2024-01-22T10:01:00Z",
-    "metadata": {
-      "pageCount": 10,
-      "wordCount": 2500,
-      "language": "en",
-      "title": "Example Document",
-      "author": "John Doe",
-      "createdAt": "2024-01-20T15:30:00Z"
-    },
-    "vectorCount": 150,
+    "uploadDate": "2024-01-22T10:00:00Z",
+    "version": 1,
+    "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "lastModified": "2024-01-22T10:00:00Z",
+    "processingStartedAt": "2024-01-22T10:00:01Z",
+    "processingCompletedAt": "2024-01-22T10:01:00Z",
+    "processing_time": 59000,
+    "processorType": "llama-parse",
+    "retryCount": 0,
     "chunkCount": 25,
-    "averageChunkSize": 100,
-    "extractedText": {
-      "available": true,
-      "size": 25000,
-      "snippet": "First few words of the document..."
-    }
+    "errorMessage": null
   },
   "processingJobs": [
     {
+      "id": "660e8400-e29b-41d4-a716-446655440000",
       "batchId": "770e8400-e29b-41d4-a716-446655440000",
-      "status": "completed",
-      "startedAt": "2024-01-22T10:00:00Z",
-      "completedAt": "2024-01-22T10:01:00Z",
-      "error": null
+      "status": "processed",
+      "processorType": "llama-parse",
+      "processingMetadata": {
+        "pageCount": 10,
+        "wordCount": 2500,
+        "language": "en"
+      }
     }
-  ],
-  "usage": {
-    "vectorStorage": 1500000,
-    "textStorage": 25000,
-    "processingTime": 60000
-  }
+  ]
 }
 ```
 
@@ -108,35 +100,34 @@ The response follows the `DocumentDetails` schema:
 | `document.id` | string (UUID) | Document identifier |
 | `document.projectId` | string (UUID) | Project identifier |
 | `document.fileName` | string | Original file name |
-| `document.processingStatus` | string | Status: pending, processing, completed, or failed |
+| `document.fileType` | string | Detected file type (e.g., PDF Document, Word Document) |
+| `document.processingStatus` | string | Status: pending, processing, processed, or failed |
 | `document.fileSize` | integer | File size in bytes |
-| `document.mimeType` | string | File MIME type |
-| `document.uploadedAt` | string (date-time) | Upload timestamp |
-| `document.completedAt` | string (date-time) | Processing completion timestamp |
-| `document.metadata` | object | Document-specific metadata |
-| `document.metadata.pageCount` | integer | Number of pages (if applicable) |
-| `document.metadata.wordCount` | integer | Total word count |
-| `document.metadata.language` | string | Detected language code |
-| `document.metadata.title` | string | Extracted document title |
-| `document.metadata.author` | string | Extracted author information |
-| `document.metadata.createdAt` | string (date-time) | Original document creation date |
-| `document.vectorCount` | integer | Number of vectors generated |
-| `document.chunkCount` | integer | Number of text chunks |
-| `document.averageChunkSize` | integer | Average tokens per chunk |
-| `document.extractedText` | object | Text extraction details |
-| `document.extractedText.available` | boolean | Whether text extraction succeeded |
-| `document.extractedText.size` | integer | Size of extracted text in bytes |
-| `document.extractedText.snippet` | string | Preview of document content |
+| `document.uploadDate` | string (date-time) | Upload timestamp |
+| `document.version` | integer | Document version number |
+| `document.contentHash` | string | SHA-256 hash of document content |
+| `document.lastModified` | string (date-time) | Last modification timestamp |
+| `document.processingStartedAt` | string (date-time) | Processing start timestamp |
+| `document.processingCompletedAt` | string (date-time) | Processing completion timestamp |
+| `document.processing_time` | integer | Processing duration in milliseconds |
+| `document.processorType` | string | Type of processor used |
+| `document.retryCount` | integer | Number of processing retry attempts |
+| `document.chunkCount` | integer | Number of text chunks generated |
+| `document.errorMessage` | string | Error message if processing failed |
 | `processingJobs` | array | Processing job history |
+| `processingJobs[].id` | string (UUID) | Processing job identifier |
 | `processingJobs[].batchId` | string (UUID) | Batch identifier |
 | `processingJobs[].status` | string | Job status |
-| `processingJobs[].startedAt` | string (date-time) | Processing start time |
-| `processingJobs[].completedAt` | string (date-time) | Processing completion time |
-| `processingJobs[].error` | string | Error message if failed |
-| `usage` | object | Resource usage metrics |
-| `usage.vectorStorage` | integer | Vector storage used (bytes) |
-| `usage.textStorage` | integer | Text storage used (bytes) |
-| `usage.processingTime` | integer | Total processing time (ms) |
+| `processingJobs[].processorType` | string | Type of processor used |
+| `processingJobs[].processingMetadata` | object | Additional processing metadata |
+
+### Processor Types
+
+- `basic`: Simple text extraction
+- `llama-parse`: Advanced document parsing (PDF, Office docs)
+- `code`: TypeScript/JavaScript parsing
+- `tree-sitter`: Advanced code parsing (Python, Go, etc.)
+- `note`: Note-specific parsing (Notion)
 
 ## Error Responses
 
@@ -146,6 +137,7 @@ The response follows the `DocumentDetails` schema:
 | 401 | Invalid API key |
 | 404 | Document or project not found |
 | 429 | Rate limit exceeded |
+| 500 | Server error |
 
 ### Example Error Response
 
@@ -155,33 +147,40 @@ The response follows the `DocumentDetails` schema:
   "code": "document_not_found",
   "category": "not_found",
   "details": {
-    "message": "The specified document does not exist or you don't have access"
+    "message": "The specified document does not exist or you don't have access",
+    "documentId": "550e8400-e29b-41d4-a716-446655440000"
   }
 }
 ```
 
 ## Best Practices
 
-1. **Error Handling**
-   - Verify document existence
-   - Handle 404 errors gracefully
-   - Implement proper retries
-   - Display user-friendly messages
+1. **Document Processing Workflow**
+   - Monitor processing status transitions
+   - Track processing times for optimization
+   - Use processor type information for content planning
+   - Handle failed documents appropriately
 
-2. **Status Monitoring**
-   - Poll for status updates
-   - Handle all status types
-   - Show processing progress
-   - Cache document details
+2. **Version Management**
+   - Track document versions over time
+   - Use content hashes for change detection
+   - Monitor modification timestamps
+   - Implement version control policies
 
-3. **Resource Management**
-   - Monitor usage metrics
-   - Track storage consumption
-   - Optimize processing time
-   - Clean up unused documents
+3. **Error Handling**
+   - Check processing status before using documents
+   - Monitor retry counts for problematic files
+   - Log and analyze error messages
+   - Implement appropriate retry strategies
 
-4. **Metadata Usage**
-   - Extract relevant metadata
-   - Display important fields
-   - Use metadata for search
-   - Update UI based on status
+4. **Processing Metadata**
+   - Analyze processing metadata for insights
+   - Use metadata for content optimization
+   - Track processor performance
+   - Monitor processing patterns
+
+5. **Security and Compliance**
+   - Track document modifications
+   - Monitor processing status changes
+   - Implement audit logging
+   - Maintain version history

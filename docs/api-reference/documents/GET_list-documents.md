@@ -21,26 +21,6 @@ Retrieve a list of all documents in a project.
           required: true,
           description: 'Project identifier (UUID)'
         }
-      },
-      query: {
-        status: {
-          name: 'status',
-          type: 'string',
-          required: false,
-          description: 'Filter by processing status (pending, processing, completed, failed)'
-        },
-        limit: {
-          name: 'limit',
-          type: 'integer',
-          required: false,
-          description: 'Maximum number of documents to return (default: 50, max: 100)'
-        },
-        offset: {
-          name: 'offset',
-          type: 'integer',
-          required: false,
-          description: 'Number of documents to skip (default: 0)'
-        }
       }
     },
     authentication: {
@@ -54,7 +34,7 @@ Retrieve a list of all documents in a project.
 
 ## Description
 
-Retrieve a paginated list of documents in your project. Results can be filtered by processing status and include detailed metadata about each document.
+Retrieve a list of all documents in your project. The response includes detailed metadata about each document, including processing status, file information, and generated content metrics.
 
 ## Request
 
@@ -64,17 +44,9 @@ Retrieve a paginated list of documents in your project. Results can be filtered 
 |-----------|------|----------|-------------|
 | `projectId` | string (UUID) | Yes | Project identifier |
 
-### Query Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `status` | string | No | Filter by processing status |
-| `limit` | integer | No | Maximum number of documents (default: 50, max: 100) |
-| `offset` | integer | No | Number of documents to skip (default: 0) |
-
 ## Response
 
-The response follows the `DocumentList` schema:
+The response includes an array of Document objects:
 
 ```json
 {
@@ -83,26 +55,22 @@ The response follows the `DocumentList` schema:
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "projectId": "123e4567-e89b-12d3-a456-426614174000",
       "fileName": "example.pdf",
-      "processingStatus": "completed",
+      "fileType": "PDF Document",
+      "processingStatus": "processed",
       "fileSize": 1024000,
-      "mimeType": "application/pdf",
-      "uploadedAt": "2024-01-22T10:00:00Z",
-      "completedAt": "2024-01-22T10:01:00Z",
-      "metadata": {
-        "pageCount": 10,
-        "wordCount": 2500,
-        "language": "en"
-      },
-      "vectorCount": 150,
-      "chunkCount": 25
+      "uploadDate": "2024-01-22T10:00:00Z",
+      "version": 1,
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "lastModified": "2024-01-22T10:00:00Z",
+      "processingStartedAt": "2024-01-22T10:00:01Z",
+      "processingCompletedAt": "2024-01-22T10:01:00Z",
+      "processing_time": 59000,
+      "processorType": "llama-parse",
+      "retryCount": 0,
+      "chunkCount": 25,
+      "errorMessage": null
     }
-  ],
-  "pagination": {
-    "total": 125,
-    "limit": 50,
-    "offset": 0,
-    "hasMore": true
-  }
+  ]
 }
 ```
 
@@ -114,22 +82,28 @@ The response follows the `DocumentList` schema:
 | `documents[].id` | string (UUID) | Document identifier |
 | `documents[].projectId` | string (UUID) | Project identifier |
 | `documents[].fileName` | string | Original file name |
-| `documents[].processingStatus` | string | Status: pending, processing, completed, or failed |
+| `documents[].fileType` | string | Detected file type (e.g., PDF Document, Word Document) |
+| `documents[].processingStatus` | string | Status: pending, processing, processed, or failed |
 | `documents[].fileSize` | integer | File size in bytes |
-| `documents[].mimeType` | string | File MIME type |
-| `documents[].uploadedAt` | string (date-time) | Upload timestamp |
-| `documents[].completedAt` | string (date-time) | Processing completion timestamp |
-| `documents[].metadata` | object | Document-specific metadata |
-| `documents[].metadata.pageCount` | integer | Number of pages (if applicable) |
-| `documents[].metadata.wordCount` | integer | Total word count |
-| `documents[].metadata.language` | string | Detected language code |
-| `documents[].vectorCount` | integer | Number of vectors generated |
-| `documents[].chunkCount` | integer | Number of text chunks |
-| `pagination` | object | Pagination details |
-| `pagination.total` | integer | Total number of documents |
-| `pagination.limit` | integer | Requested limit |
-| `pagination.offset` | integer | Requested offset |
-| `pagination.hasMore` | boolean | Whether more documents exist |
+| `documents[].uploadDate` | string (date-time) | Upload timestamp |
+| `documents[].version` | integer | Document version number |
+| `documents[].contentHash` | string | SHA-256 hash of document content |
+| `documents[].lastModified` | string (date-time) | Last modification timestamp |
+| `documents[].processingStartedAt` | string (date-time) | Processing start timestamp |
+| `documents[].processingCompletedAt` | string (date-time) | Processing completion timestamp |
+| `documents[].processing_time` | integer | Processing duration in milliseconds |
+| `documents[].processorType` | string | Type of processor used (basic, llama-parse, code, tree-sitter, note) |
+| `documents[].retryCount` | integer | Number of processing retry attempts |
+| `documents[].chunkCount` | integer | Number of text chunks generated |
+| `documents[].errorMessage` | string | Error message if processing failed |
+
+### Processor Types
+
+- `basic`: Simple text extraction
+- `llama-parse`: Advanced document parsing (PDF, Office docs)
+- `code`: TypeScript/JavaScript parsing
+- `tree-sitter`: Advanced code parsing (Python, Go, etc.)
+- `note`: Note-specific parsing (Notion)
 
 ## Error Responses
 
@@ -139,36 +113,50 @@ The response follows the `DocumentList` schema:
 | 401 | Invalid API key |
 | 404 | Project not found |
 | 429 | Rate limit exceeded |
+| 500 | Server error |
 
 ### Example Error Response
 
 ```json
 {
-  "error": "Invalid project ID",
-  "code": "invalid_project",
-  "category": "validation",
+  "error": "Project not found",
+  "code": "project_not_found",
+  "category": "not_found",
   "details": {
-    "message": "Project does not exist or you don't have access"
+    "message": "The specified project does not exist or you don't have access",
+    "projectId": "123e4567-e89b-12d3-a456-426614174000"
   }
 }
 ```
 
 ## Best Practices
 
-1. **Pagination**
-   - Use appropriate page sizes
-   - Handle hasMore flag properly
-   - Cache results when possible
-   - Implement infinite scroll UI
+1. **Document Processing Workflow**
+   - Monitor processing status transitions
+   - Track processing times for optimization
+   - Use processor type information for content planning
+   - Handle failed documents appropriately
 
-2. **Filtering**
-   - Filter by status when needed
-   - Consider UI loading states
-   - Handle empty results gracefully
-   - Preserve filter state
+2. **Version Management**
+   - Track document versions over time
+   - Use content hashes for change detection
+   - Monitor modification timestamps
+   - Implement version control policies
 
-3. **Performance**
-   - Monitor rate limits
-   - Implement proper error handling
-   - Consider background refresh
-   - Cache document metadata
+3. **Error Handling**
+   - Check processing status before using documents
+   - Monitor retry counts for problematic files
+   - Log and analyze error messages
+   - Implement appropriate retry strategies
+
+4. **Performance Optimization**
+   - Monitor processing times across document types
+   - Analyze chunk counts for content optimization
+   - Consider processor type performance characteristics
+   - Implement caching strategies
+
+5. **Security and Compliance**
+   - Track document modifications
+   - Monitor processing status changes
+   - Implement audit logging
+   - Maintain version history
