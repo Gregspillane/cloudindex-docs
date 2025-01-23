@@ -146,7 +146,7 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
 
     try {
       let url = getUrlWithPathParams(`${baseUrl}${endpoint.path}`);
-      
+
       if (endpoint.parameters.query) {
         const queryParams = Object.entries(endpoint.parameters.query)
           .map(([name, param]) => {
@@ -155,7 +155,7 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
           })
           .filter(Boolean)
           .join('&');
-        
+
         if (queryParams) {
           url += `?${queryParams}`;
         }
@@ -174,37 +174,67 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
         }
       }
 
+      headers['Content-Type'] = 'application/json';
+
+      let body: FormData | string | undefined;
       let formData: FormData | undefined;
       if ((endpoint.method === 'POST' || endpoint.method === 'PUT') && endpoint.parameters.body) {
-        formData = new FormData();
-        Object.entries(endpoint.parameters.body).forEach(([name, param]) => {
-          if (param.type === 'file' || param.type === 'file[]') {
-            const uploadState = fileUploads[name];
-            if (uploadState?.files) {
-              uploadState.files.forEach(file => {
-                formData!.append(name, file);
-              });
+        // Check if any parameter is a file type
+        const hasFileUpload = Object.values(endpoint.parameters.body).some(
+          param => param.type === 'file' || param.type === 'file[]'
+        );
+
+        if (hasFileUpload) {
+          // Use FormData for file uploads
+          formData = new FormData();
+          Object.entries(endpoint.parameters.body).forEach(([name, param]) => {
+            if (param.type === 'file' || param.type === 'file[]') {
+              const uploadState = fileUploads[name];
+              if (uploadState?.files) {
+                uploadState.files.forEach(file => {
+                  formData!.append(name, file);
+                });
+              }
+            } else {
+              const value = paramValues[`body.${name}`];
+              if (value) {
+                formData!.append(name, value);
+              }
             }
-          } else {
+          });
+          body = formData;
+          // Remove Content-Type header for FormData
+          delete headers['Content-Type'];
+        } else {
+          // Use JSON for non-file requests
+          const jsonBody: Record<string, any> = {};
+          Object.entries(endpoint.parameters.body).forEach(([name, param]) => {
             const value = paramValues[`body.${name}`];
             if (value) {
-              formData!.append(name, value);
+              try {
+                // Try to parse as JSON if possible
+                jsonBody[name] = JSON.parse(value);
+              } catch {
+                // If not valid JSON, use as string
+                jsonBody[name] = value;
+              }
             }
-          }
-        });
+          });
+          body = JSON.stringify(jsonBody);
+        }
       }
 
       const response = await fetch(url, {
         method: endpoint.method,
         headers,
-        body: formData
+        body
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         throw new Error(
-          errorData?.error || 
-          errorData?.message || 
+          errorData?.error ||
+          errorData?.message ||
           `HTTP error! status: ${response.status}`
         );
       }
@@ -225,7 +255,7 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
         <div className={styles.path}>{endpoint.path}</div>
         <div className={styles.toggleButton}>
           <svg width="16" height="16" viewBox="0 0 24 24" className={`${styles.arrow} ${isCollapsed ? styles.collapsed : ''}`}>
-            <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+            <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" />
           </svg>
         </div>
       </div>
@@ -260,10 +290,10 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
             <h3>Request</h3>
             <div className={styles.section}>
               <h4>Base URL</h4>
-              <input 
-                type="text" 
-                value={baseUrl} 
-                readOnly 
+              <input
+                type="text"
+                value={baseUrl}
+                readOnly
                 className={styles.baseUrl}
               />
             </div>
@@ -271,7 +301,7 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
             {endpoint.authentication && (
               <div className={styles.section}>
                 <h4>Authentication</h4>
-                <input 
+                <input
                   type="text"
                   value={apiKey}
                   onChange={(e) => handleApiKeyChange(e.target.value)}
@@ -293,7 +323,7 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
                       {param.required && <span className={styles.required}>*</span>}
                     </label>
                     {param.type === 'file' || param.type === 'file[]' ? (
-                      <div 
+                      <div
                         className={`${styles.fileUploadContainer} ${fileUploads[name]?.dragOver ? styles.dragOver : ''}`}
                         onDragOver={(e) => handleDragOver(name, e)}
                         onDragLeave={(e) => handleDragLeave(name, e)}
@@ -350,7 +380,7 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
               </div>
             ))}
 
-            <button 
+            <button
               className={styles.sendButton}
               onClick={handleSubmit}
               disabled={isLoading}
@@ -383,7 +413,7 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
               <>
                 <div className={styles.success}>
                   <svg className={styles.successIcon} viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                    <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
                   </svg>
                   {endpoint.method === 'POST' && endpoint.parameters.body?.documents ? (
                     'Document uploaded successfully!'

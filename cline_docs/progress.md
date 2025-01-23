@@ -17,19 +17,27 @@
 - Comprehensive file format support documentation
 - Standardized status terminology and error responses
 - Processor type descriptions and best practices
+- Query API documentation improvements:
+  - Renamed and restructured for clarity
+  - Enhanced enterprise focus
+  - Updated code examples
+  - Fixed MDX syntax issues
+  - Added comprehensive error handling
+  - Improved parameter descriptions
 
 ## In Progress
 - [COMPLETED] API playground file upload enhancements
 - [COMPLETED] Response handling improvements
 - [COMPLETED] Documents API documentation updates
+- [COMPLETED] Query API documentation updates
 
 ## Next Priorities
-1. Query API Documentation
-   - Review and align with OpenAPI spec
-   - Enhance hybrid search documentation
-   - Add vector operation details
-   - Include reranking information
-   - Update best practices
+1. API Playground Improvements
+   - Enhance Query API playground
+   - Improve parameter organization
+   - Add better examples
+   - Update response handling
+   - Enhance error displays
 
 2. Documentation Structure
    - Ensure consistent terminology

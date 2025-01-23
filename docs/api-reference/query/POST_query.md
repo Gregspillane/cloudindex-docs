@@ -1,42 +1,42 @@
 ---
-title: Hybrid Search (POST)
+title: Query (POST)
 sidebar_position: 2
 ---
 
 import ApiPlayground from '@site/src/components/ApiPlayground';
 
-# Hybrid Search
+# Query
 
-Execute a hybrid search query combining semantic search, keyword matching, and optional reranking capabilities for enterprise-grade search results.
+Execute a document query leveraging semantic search, keyword matching, and optional reranking capabilities for enterprise-grade search results.
 
-## Endpoint
-
-```http
-POST /public/v1/query
-```
 
 <ApiPlayground
   endpoint={{
     method: 'POST',
     path: '/public/v1/query',
+    summary: 'Query documents using semantic search, keyword matching, and optional reranking',
     parameters: {
       body: {
         query: {
-          name: 'query',
           type: 'string',
           required: true,
-          description: 'The search query text (1-1000 characters)'
+          minLength: 1,
+          maxLength: 1000,
+          description: 'The search query text',
+          example: 'What is RAG?'
         },
         filters: {
-          name: 'filters',
           type: 'object',
           required: false,
           description: 'Optional filters to narrow search results',
           properties: {
             documentIds: {
               type: 'array',
-              items: { type: 'string', format: 'uuid' },
-              description: 'Filter by specific document IDs'
+              items: { 
+                type: 'string',
+                format: 'uuid'
+              },
+              description: 'Limit search to specific document IDs'
             },
             types: {
               type: 'array',
@@ -44,20 +44,20 @@ POST /public/v1/query
                 type: 'string',
                 enum: ['pdf', 'txt', 'md', 'mdx', 'doc', 'docx']
               },
-              description: 'Filter by document types'
+              description: 'Limit search to specific file types'
             },
             dateRange: {
               type: 'object',
               properties: {
                 from: { 
-                  type: 'string', 
+                  type: 'string',
                   format: 'date-time',
-                  description: 'Start date (ISO 8601)'
+                  description: 'Start date (ISO 8601 format)'
                 },
                 to: { 
-                  type: 'string', 
+                  type: 'string',
                   format: 'date-time',
-                  description: 'End date (ISO 8601)'
+                  description: 'End date (ISO 8601 format)'
                 }
               },
               description: 'Filter by document creation date'
@@ -65,67 +65,76 @@ POST /public/v1/query
           }
         },
         options: {
-          name: 'options',
           type: 'object',
           required: false,
-          description: 'Search configuration options',
+          description: 'Optional search configuration',
           properties: {
             similarityTopK: {
               type: 'integer',
               minimum: 1,
               maximum: 100,
               default: 10,
-              description: 'Number of top similar documents to retrieve'
+              description: 'Number of top similar documents to retrieve',
+              example: 10
             },
             alpha: {
               type: 'number',
               minimum: 0.01,
               maximum: 1,
               default: 0.75,
-              description: 'Balance between semantic and keyword search'
+              description: 'Balance between semantic and keyword search (higher values favor semantic search)',
+              example: 0.75
             },
             rerankingEnabled: {
               type: 'boolean',
               default: false,
-              description: 'Enable result reranking'
+              description: 'Whether to enable reranking of search results',
+              example: true
             },
             rerankingTopN: {
               type: 'integer',
               minimum: 1,
               maximum: 100,
-              description: 'Number of results to rerank (must not exceed similarityTopK)'
+              default: 5,
+              description: 'Number of top results to rerank. Must not exceed similarityTopK if both are specified.',
+              example: 5
             },
             rerankingThreshold: {
               type: 'number',
               minimum: 0,
               maximum: 1,
               default: 0.2,
-              description: 'Minimum score threshold for reranked results'
+              description: 'Minimum score threshold for reranked results',
+              example: 0.2
             },
             limit: {
               type: 'integer',
               minimum: 1,
               maximum: 100,
               default: 10,
-              description: 'Maximum number of results to return'
+              description: 'Maximum number of results to return',
+              example: 10
             },
             threshold: {
               type: 'number',
               minimum: 0,
               maximum: 1,
               default: 0.0,
-              description: 'Minimum similarity score threshold'
+              description: 'Minimum similarity score threshold',
+              example: 0.0
             },
             includeMetadata: {
               type: 'boolean',
               default: false,
-              description: 'Include document metadata in results'
+              description: 'Whether to include document metadata in results',
+              example: false
             },
             preset: {
               type: 'string',
               enum: ['general', 'business', 'technical', 'financial', 'scientific', 'custom'],
               default: 'general',
-              description: 'Preset search configuration'
+              description: 'Preset configuration for search behavior: general (balanced settings), business (optimized for business docs), technical (tuned for technical docs), financial (specialized for financial docs), scientific (configured for scientific papers), custom (use custom parameters)',
+              example: 'general'
             }
           }
         }
@@ -137,9 +146,115 @@ POST /public/v1/query
       name: 'Authorization',
       prefix: 'ApiKey',
       description: 'Your API key'
+    },
+    responses: {
+      '200': {
+        description: 'Successful query response',
+        headers: {
+          'X-RateLimit-Limit': {
+            description: 'Maximum requests per window'
+          },
+          'X-RateLimit-Remaining': {
+            description: 'Remaining requests in current window'
+          },
+          'X-RateLimit-Reset': {
+            description: 'Time when the rate limit resets (Unix timestamp)'
+          }
+        },
+        content: {
+          'application/json': {
+            example: {
+              scored_chunks: [
+                {
+                  id: '123e4567-e89b-12d3-a456-426614174000',
+                  text: 'RAG (Retrieval-Augmented Generation) is a technique that...',
+                  score: 0.92,
+                  document_id: '123e4567-e89b-12d3-a456-426614174001',
+                  document_name: 'rag-overview.pdf',
+                  document_metadata: {
+                    mime_type: 'application/pdf',
+                    created_at: '2024-01-15T12:00:00Z',
+                    file_path: 'docs/rag-overview.pdf',
+                    source_type: 'upload',
+                    processing_status: 'processed'
+                  }
+                }
+              ],
+              metadata: {
+                total_chunks: 150,
+                processing_time_ms: 245,
+                reranking_applied: true
+              }
+            }
+          }
+        }
+      },
+      '400': {
+        description: 'Bad request - invalid input parameters',
+        content: {
+          'application/json': {
+            example: {
+              code: 'validation/invalid-input',
+              category: 'validation',
+              message: 'Invalid input parameters provided',
+              details: {
+                errors: [
+                  {
+                    field: 'options.rerankingTopN',
+                    message: 'Cannot exceed similarityTopK value'
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      '401': {
+        description: 'Unauthorized - invalid or missing API key',
+        content: {
+          'application/json': {
+            example: {
+              code: 'api_key/invalid',
+              category: 'api_key',
+              message: 'The provided API key is invalid or has been revoked'
+            }
+          }
+        }
+      },
+      '429': {
+        description: 'Too many requests - rate limit exceeded',
+        content: {
+          'application/json': {
+            example: {
+              code: 'rate_limit/exceeded',
+              category: 'rate_limit',
+              message: 'Rate limit exceeded',
+              details: {
+                limit: 100,
+                reset_at: 1623456789
+              }
+            }
+          }
+        }
+      },
+      '500': {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            example: {
+              code: 'system/internal-error',
+              category: 'system',
+              message: 'An unexpected error occurred',
+              details: {
+                request_id: 'req_abc123'
+              }
+            }
+          }
+        }
+      }
     }
   }}
-  baseUrl="https://api.cloudindex.ai/public/v1"
+  baseUrl="https://api.cloudindex.ai"
   languages={['curl', 'python', 'javascript', 'go']}
 />
 
@@ -252,7 +367,7 @@ class CloudIndexClient:
             "Content-Type": "application/json"
         }
     
-    def search(
+    def query(
         self,
         query: str,
         similarity_top_k: int = 10,
@@ -263,7 +378,7 @@ class CloudIndexClient:
         filters: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        Execute a hybrid search query.
+        Execute a document query.
         
         Args:
             query: Search query text
@@ -311,7 +426,7 @@ class CloudIndexClient:
 client = CloudIndexClient("your-api-key")
 
 try:
-    results = client.search(
+    results = client.query(
         query="What is RAG?",
         filters={
             "types": ["pdf", "md"],
@@ -342,13 +457,13 @@ class CloudIndexClient {
   }
 
   /**
-   * Execute a hybrid search query
+   * Execute a document query
    * @param {string} query - Search query text
    * @param {Object} options - Search configuration
    * @param {Object} filters - Optional search filters
    * @returns {Promise<Object>} Search results and metadata
    */
-  async search(query, {
+  async query(query, {
     similarityTopK = 10,
     alpha = 0.75,
     rerankingEnabled = true,
@@ -392,7 +507,7 @@ class CloudIndexClient {
 
       return await response.json();
     } catch (error) {
-      console.error('Search error:', error);
+      console.error('Query error:', error);
       throw error;
     }
   }
@@ -402,7 +517,7 @@ class CloudIndexClient {
 const client = new CloudIndexClient('your-api-key');
 
 try {
-  const results = await client.search('What is RAG?', {
+  const results = await client.query('What is RAG?', {
     rerankingEnabled: true
   }, {
     types: ['pdf', 'md'],
@@ -439,7 +554,7 @@ type CloudIndexClient struct {
     HTTPClient *http.Client
 }
 
-type SearchOptions struct {
+type QueryOptions struct {
     SimilarityTopK     int     `json:"similarityTopK,omitempty"`
     Alpha              float64 `json:"alpha,omitempty"`
     RerankingEnabled   bool    `json:"rerankingEnabled,omitempty"`
@@ -447,10 +562,10 @@ type SearchOptions struct {
     RerankingThreshold float64 `json:"rerankingThreshold,omitempty"`
 }
 
-type SearchRequest struct {
-    Query   string        `json:"query"`
-    Options SearchOptions `json:"options,omitempty"`
-    Filters interface{}   `json:"filters,omitempty"`
+type QueryRequest struct {
+    Query   string       `json:"query"`
+    Options QueryOptions `json:"options,omitempty"`
+    Filters interface{} `json:"filters,omitempty"`
 }
 
 type DocumentMetadata struct {
@@ -470,7 +585,7 @@ type ScoredChunk struct {
     DocumentMetadata DocumentMetadata `json:"document_metadata"`
 }
 
-type SearchResponse struct {
+type QueryResponse struct {
     ScoredChunks []ScoredChunk `json:"scored_chunks"`
     Metadata     struct {
         TotalChunks      int  `json:"total_chunks"`
@@ -489,8 +604,8 @@ func NewCloudIndexClient(apiKey string) *CloudIndexClient {
     }
 }
 
-func (c *CloudIndexClient) Search(query string, options SearchOptions, filters interface{}) (*SearchResponse, error) {
-    reqBody := SearchRequest{
+func (c *CloudIndexClient) Query(query string, options QueryOptions, filters interface{}) (*QueryResponse, error) {
+    reqBody := QueryRequest{
         Query:   query,
         Options: options,
         Filters: filters,
@@ -525,19 +640,19 @@ func (c *CloudIndexClient) Search(query string, options SearchOptions, filters i
         return nil, fmt.Errorf("error response: %s", resp.Status)
     }
     
-    var searchResp SearchResponse
-    if err := json.NewDecoder(resp.Body).Decode(&searchResp); err != nil {
+    var queryResp QueryResponse
+    if err := json.NewDecoder(resp.Body).Decode(&queryResp); err != nil {
         return nil, fmt.Errorf("error decoding response: %v", err)
     }
     
-    return &searchResp, nil
+    return &queryResp, nil
 }
 
 // Usage example
 func main() {
     client := NewCloudIndexClient("your-api-key")
     
-    options := SearchOptions{
+    options := QueryOptions{
         SimilarityTopK:     10,
         Alpha:              0.75,
         RerankingEnabled:   true,
@@ -552,7 +667,7 @@ func main() {
         },
     }
     
-    results, err := client.Search("What is RAG?", options, filters)
+    results, err := client.Query("What is RAG?", options, filters)
     if err != nil {
         fmt.Printf("Error: %v\n", err)
         return
@@ -577,8 +692,8 @@ func main() {
        stop=stop_after_attempt(3),
        wait=wait_exponential(multiplier=1, min=4, max=10)
    )
-   def search_with_retry():
-       # Your search implementation
+   def query_with_retry():
+       # Your query implementation
    ```
 
 2. **Rate Limit Handling**
@@ -594,10 +709,10 @@ func main() {
 3. **Graceful Degradation**
    ```python
    try:
-       results = client.search(query, reranking_enabled=True)
+       results = client.query(query, reranking_enabled=True)
    except Exception:
        # Fall back to non-reranked search
-       results = client.search(query, reranking_enabled=False)
+       results = client.query(query, reranking_enabled=False)
    ```
 
 ### Performance Optimization
@@ -613,8 +728,8 @@ func main() {
 
 2. **Batch Processing**
    ```python
-   async def batch_search(queries):
-       tasks = [search(query) for query in queries]
+   async def batch_query(queries):
+       tasks = [query(q) for q in queries]
        return await asyncio.gather(*tasks)
    ```
 
@@ -623,8 +738,8 @@ func main() {
    from functools import lru_cache
    
    @lru_cache(maxsize=1000)
-   def cached_search(query, **options):
-       return client.search(query, **options)
+   def cached_query(query, **options):
+       return client.query(query, **options)
    ```
 
 ### Security Considerations

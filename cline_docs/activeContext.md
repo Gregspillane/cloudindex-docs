@@ -1,38 +1,40 @@
 # Active Context
 
 ## Current Focus
-- API documentation accuracy and enterprise-grade improvements
-- Aligning documentation with OpenAPI specification
+- Query API documentation improvements
+- API playground enhancements
+- Enterprise-grade documentation standards
 
 ## Recent Changes
-1. Updated Documents API documentation:
-   - Aligned POST_upload-document.md with OpenAPI spec
-   - Updated GET_list-documents.md for accuracy
-   - Enhanced GET_get-document.md with complete schema
-   - Revised DELETE_delete-document.md for enterprise focus
-   - Removed GET_document-versions.md endpoint
+1. Updated Query API Documentation:
+   - Renamed POST_hybrid-search.md to POST_query.md for clarity
+   - Enhanced overview.md with enterprise focus
+   - Updated all code examples to use "query" instead of "search"
+   - Fixed MDX syntax issues
+   - Added comprehensive error handling examples
+   - Enhanced parameter descriptions and examples
 
-2. Documentation Improvements:
-   - Added comprehensive file format support details
-   - Enhanced error response documentation
-   - Standardized status terminology (using "processed")
-   - Added processor type descriptions
-   - Expanded best practices sections
+2. Documentation Structure:
+   - Improved organization and readability
+   - Added clear section headings
+   - Enhanced code examples with best practices
+   - Added implementation tips
+   - Updated security considerations
 
 3. Enterprise Focus Enhancements:
-   - Added compliance considerations
-   - Improved data governance guidance
-   - Enhanced security recommendations
-   - Added audit trail requirements
-   - Included resource management strategies
+   - Added detailed error handling patterns
+   - Enhanced security best practices
+   - Added performance optimization guidelines
+   - Improved rate limiting documentation
+   - Added enterprise-grade code examples
 
 ## Next Steps for Next LLM
-1. Query API Documentation Updates:
-   - Review and align with OpenAPI spec
-   - Enhance hybrid search documentation
-   - Add vector operation details
-   - Include reranking information
-   - Update best practices
+1. API Playground Improvements:
+   - Enhance Query API playground
+   - Improve parameter organization
+   - Add better examples
+   - Update response handling
+   - Enhance error displays
 
 2. Documentation Structure:
    - Ensure consistent terminology
