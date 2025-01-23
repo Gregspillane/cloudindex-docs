@@ -1,5 +1,5 @@
 ---
-title: Message History
+title: Message History (GET)
 sidebar_position: 5
 ---
 

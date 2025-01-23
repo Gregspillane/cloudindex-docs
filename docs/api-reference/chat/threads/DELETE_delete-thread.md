@@ -1,5 +1,5 @@
 ---
-title: Delete Thread
+title: Delete Thread (DELETE)
 sidebar_position: 3
 ---
 

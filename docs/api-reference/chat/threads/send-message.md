@@ -1,5 +1,5 @@
 ---
-title: Send Message
+title: Send Message (POST)
 sidebar_position: 4
 ---
 

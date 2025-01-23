@@ -1,5 +1,5 @@
 ---
-title: List Threads
+title: List Threads (GET)
 sidebar_position: 2
 ---
 

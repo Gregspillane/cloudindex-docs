@@ -1,5 +1,5 @@
 ---
-title: Create Thread
+title: Create Thread (POST)
 sidebar_position: 1
 ---
 
