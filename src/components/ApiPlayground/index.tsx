@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, DragEvent } from 'react';
 import styles from './styles.module.css';
 import CodeExamples from './CodeExamples';
 
@@ -29,6 +29,11 @@ interface ApiPlaygroundProps {
   languages: string[];
 }
 
+interface FileUploadState {
+  files: File[];
+  dragOver: boolean;
+}
+
 export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlaygroundProps): JSX.Element {
   const [selectedLanguage, setSelectedLanguage] = useState(languages[0]);
   const [response, setResponse] = useState<any>(null);
@@ -36,12 +41,15 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
   const [error, setError] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [paramValues, setParamValues] = useState<Record<string, string>>({});
+  const [fileUploads, setFileUploads] = useState<Record<string, FileUploadState>>({});
   const [apiKey, setApiKey] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('cloudindex_api_key') || '';
     }
     return '';
   });
+
+  const fileInputRefs = useRef<Record<string, HTMLInputElement>>({});
 
   const handleParamChange = useCallback((type: string, name: string, value: string) => {
     setParamValues(prev => {
@@ -63,6 +71,59 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
     if (typeof window !== 'undefined') {
       localStorage.setItem('cloudindex_api_key', value);
     }
+  }, []);
+
+  const handleFileSelect = useCallback((paramName: string, files: FileList | null) => {
+    if (!files) return;
+
+    setFileUploads(prev => ({
+      ...prev,
+      [paramName]: {
+        files: Array.from(files),
+        dragOver: false
+      }
+    }));
+
+    // Update paramValues with file names for code examples
+    const fileNames = Array.from(files).map(f => f.name).join(', ');
+    handleParamChange('body', paramName, fileNames);
+  }, [handleParamChange]);
+
+  const handleDragOver = useCallback((paramName: string, e: DragEvent) => {
+    e.preventDefault();
+    setFileUploads(prev => ({
+      ...prev,
+      [paramName]: {
+        ...prev[paramName],
+        dragOver: true
+      }
+    }));
+  }, []);
+
+  const handleDragLeave = useCallback((paramName: string, e: DragEvent) => {
+    e.preventDefault();
+    setFileUploads(prev => ({
+      ...prev,
+      [paramName]: {
+        ...prev[paramName],
+        dragOver: false
+      }
+    }));
+  }, []);
+
+  const handleDrop = useCallback((paramName: string, e: DragEvent) => {
+    e.preventDefault();
+    handleFileSelect(paramName, e.dataTransfer.files);
+  }, [handleFileSelect]);
+
+  const removeFile = useCallback((paramName: string, fileIndex: number) => {
+    setFileUploads(prev => {
+      const newState = { ...prev };
+      if (newState[paramName]) {
+        newState[paramName].files = newState[paramName].files.filter((_, i) => i !== fileIndex);
+      }
+      return newState;
+    });
   }, []);
 
   const getUrlWithPathParams = useCallback((basePath: string) => {
@@ -117,15 +178,16 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
       if ((endpoint.method === 'POST' || endpoint.method === 'PUT') && endpoint.parameters.body) {
         formData = new FormData();
         Object.entries(endpoint.parameters.body).forEach(([name, param]) => {
-          const value = paramValues[`body.${name}`];
-          if (value) {
-            // For file type parameters, create a File object
-            if (param.type === 'file' || param.type === 'file[]') {
-              // Create a mock File object since we can't access the real file in the playground
-              formData!.append(name, new File([''], value.split('/').pop() || value, {
-                type: 'application/octet-stream'
-              }));
-            } else {
+          if (param.type === 'file' || param.type === 'file[]') {
+            const uploadState = fileUploads[name];
+            if (uploadState?.files) {
+              uploadState.files.forEach(file => {
+                formData!.append(name, file);
+              });
+            }
+          } else {
+            const value = paramValues[`body.${name}`];
+            if (value) {
               formData!.append(name, value);
             }
           }
@@ -154,7 +216,7 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
     } finally {
       setIsLoading(false);
     }
-  }, [endpoint, baseUrl, apiKey, paramValues]);
+  }, [endpoint, baseUrl, apiKey, paramValues, fileUploads]);
 
   return (
     <div className={styles.container}>
@@ -170,104 +232,172 @@ export default function ApiPlayground({ endpoint, baseUrl, languages }: ApiPlayg
 
       {!isCollapsed && (
         <div className={styles.content}>
-        <div className={styles.languageTabs}>
-          {languages.map(lang => (
-            <button
-              key={lang}
-              className={`${styles.languageTab} ${selectedLanguage === lang ? styles.selected : ''}`}
-              onClick={() => setSelectedLanguage(lang)}
-              data-language={lang.toLowerCase()}
-              aria-label={`${lang} code example`}
-            >
-              {lang}
-            </button>
-          ))}
-        </div>
+          <div className={styles.languageTabs}>
+            {languages.map(lang => (
+              <button
+                key={lang}
+                className={`${styles.languageTab} ${selectedLanguage === lang ? styles.selected : ''}`}
+                onClick={() => setSelectedLanguage(lang)}
+                data-language={lang.toLowerCase()}
+                aria-label={`${lang} code example`}
+              >
+                {lang}
+              </button>
+            ))}
+          </div>
 
-        <div className={styles.codeExample}>
-          <CodeExamples
-            endpoint={endpoint}
-            baseUrl={baseUrl}
-            language={selectedLanguage}
-            apiKey={apiKey}
-            paramValues={paramValues}
-          />
-        </div>
-
-        <div className={styles.requestBuilder}>
-          <h3>Request</h3>
-          <div className={styles.section}>
-            <h4>Base URL</h4>
-            <input 
-              type="text" 
-              value={baseUrl} 
-              readOnly 
-              className={styles.baseUrl}
+          <div className={styles.codeExample}>
+            <CodeExamples
+              endpoint={endpoint}
+              baseUrl={baseUrl}
+              language={selectedLanguage}
+              apiKey={apiKey}
+              paramValues={paramValues}
             />
           </div>
 
-          {endpoint.authentication && (
+          <div className={styles.requestBuilder}>
+            <h3>Request</h3>
             <div className={styles.section}>
-              <h4>Authentication</h4>
+              <h4>Base URL</h4>
               <input 
-                type="text"
-                value={apiKey}
-                onChange={(e) => handleApiKeyChange(e.target.value)}
-                placeholder={`Enter ${endpoint.authentication.type}`}
-                className={styles.authInput}
-                spellCheck={false}
-                autoComplete="off"
+                type="text" 
+                value={baseUrl} 
+                readOnly 
+                className={styles.baseUrl}
               />
             </div>
-          )}
 
-          {Object.entries(endpoint.parameters).map(([type, params]) => (
-            <div key={type} className={styles.section}>
-              <h4>{type.charAt(0).toUpperCase() + type.slice(1)} Parameters</h4>
-              {Object.entries(params).map(([name, param]) => (
-                <div key={name} className={styles.parameter}>
-                  <label>
-                    {name}
-                    {param.required && <span className={styles.required}>*</span>}
-                  </label>
-                  <input
-                    type="text"
-                    value={paramValues[`${type}.${name}`] || ''}
-                    onChange={(e) => handleParamChange(type, name, e.target.value)}
-                    placeholder={param.type}
-                    className={styles.parameterInput}
-                    spellCheck={false}
-                  />
-                  <div className={styles.description}>{param.description}</div>
+            {endpoint.authentication && (
+              <div className={styles.section}>
+                <h4>Authentication</h4>
+                <input 
+                  type="text"
+                  value={apiKey}
+                  onChange={(e) => handleApiKeyChange(e.target.value)}
+                  placeholder={`Enter ${endpoint.authentication.type}`}
+                  className={styles.authInput}
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+              </div>
+            )}
+
+            {Object.entries(endpoint.parameters).map(([type, params]) => (
+              <div key={type} className={styles.section}>
+                <h4>{type.charAt(0).toUpperCase() + type.slice(1)} Parameters</h4>
+                {Object.entries(params).map(([name, param]) => (
+                  <div key={name} className={styles.parameter}>
+                    <label>
+                      {name}
+                      {param.required && <span className={styles.required}>*</span>}
+                    </label>
+                    {param.type === 'file' || param.type === 'file[]' ? (
+                      <div 
+                        className={`${styles.fileUploadContainer} ${fileUploads[name]?.dragOver ? styles.dragOver : ''}`}
+                        onDragOver={(e) => handleDragOver(name, e)}
+                        onDragLeave={(e) => handleDragLeave(name, e)}
+                        onDrop={(e) => handleDrop(name, e)}
+                        onClick={() => fileInputRefs.current[name]?.click()}
+                      >
+                        <input
+                          ref={el => fileInputRefs.current[name] = el!}
+                          type="file"
+                          className={styles.fileUploadInput}
+                          onChange={(e) => handleFileSelect(name, e.target.files)}
+                          multiple={param.type === 'file[]'}
+                          accept=".pdf,.doc,.docx,.txt,.md"
+                        />
+                        <div className={styles.fileUploadLabel}>
+                          {fileUploads[name]?.files?.length ? (
+                            <div className={styles.selectedFiles}>
+                              {fileUploads[name].files.map((file, index) => (
+                                <div key={index} className={styles.selectedFile}>
+                                  <span className={styles.selectedFileName}>{file.name}</span>
+                                  <button
+                                    className={styles.removeFileButton}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeFile(name, index);
+                                    }}
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <>
+                              <div>Drop files here or click to select</div>
+                              <div>Supported formats: PDF, DOC, DOCX, TXT, MD</div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        value={paramValues[`${type}.${name}`] || ''}
+                        onChange={(e) => handleParamChange(type, name, e.target.value)}
+                        placeholder={param.type}
+                        className={styles.parameterInput}
+                        spellCheck={false}
+                      />
+                    )}
+                    <div className={styles.description}>{param.description}</div>
+                  </div>
+                ))}
+              </div>
+            ))}
+
+            <button 
+              className={styles.sendButton}
+              onClick={handleSubmit}
+              disabled={isLoading}
+              type="button"
+            >
+              {isLoading ? 'Sending...' : 'Send Request'}
+            </button>
+          </div>
+
+          <div className={styles.response}>
+            <div className={styles.responseHeader}>
+              <h3>Response</h3>
+              {response && !error && (
+                <div className={`${styles.responseStatus} ${styles.success}`}>
+                  Success
                 </div>
-              ))}
+              )}
+              {error && (
+                <div className={`${styles.responseStatus} ${styles.error}`}>
+                  Error
+                </div>
+              )}
             </div>
-          ))}
-
-          <button 
-            className={styles.sendButton}
-            onClick={handleSubmit}
-            disabled={isLoading}
-            type="button"
-          >
-            {isLoading ? 'Sending...' : 'Send Request'}
-          </button>
+            {error && (
+              <div className={styles.error}>
+                {error}
+              </div>
+            )}
+            {response && !error && (
+              <>
+                <div className={styles.success}>
+                  <svg className={styles.successIcon} viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                  </svg>
+                  {endpoint.method === 'POST' && endpoint.parameters.body?.documents ? (
+                    'Document uploaded successfully!'
+                  ) : (
+                    'Request completed successfully!'
+                  )}
+                </div>
+                <pre className={styles.responseContent}>
+                  {JSON.stringify(response, null, 2)}
+                </pre>
+              </>
+            )}
+          </div>
         </div>
-
-        <div className={styles.response}>
-          <h3>Response</h3>
-          {error && (
-            <div className={styles.error}>
-              {error}
-            </div>
-          )}
-          {response && (
-            <pre className={styles.responseContent}>
-              {JSON.stringify(response, null, 2)}
-            </pre>
-          )}
-        </div>
-      </div>
       )}
     </div>
   );

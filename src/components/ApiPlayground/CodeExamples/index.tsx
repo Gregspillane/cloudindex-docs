@@ -44,41 +44,14 @@ const getUrlWithPathParams = (basePath: string, endpoint: ApiEndpoint, paramValu
   return url;
 };
 
-const convertValue = (value: string | undefined, type: string): any => {
-  if (!value) return undefined;
-  
-  switch (type.toLowerCase()) {
-    case 'boolean':
-      return value.toLowerCase() === 'true';
-    case 'number':
-    case 'integer':
-      return Number(value);
-    case 'array':
-      try {
-        return JSON.parse(value);
-      } catch {
-        return value.split(',').map(v => v.trim());
-      }
-    case 'object':
-      try {
-        return JSON.parse(value);
-      } catch {
-        return value;
-      }
-    default:
-      return value;
-  }
-};
-
 const generateCurlExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: string, paramValues?: Record<string, string>): string => {
   const parts: string[] = ['curl'];
   
   // Add method
   parts.push(`-X ${endpoint.method}`);
   
-  // Add headers for multipart/form-data
-  parts.push('-H "Content-Type: multipart/form-data"');
-  if (apiKey && endpoint.authentication) {
+  // Add headers
+  if (endpoint.authentication) {
     if (endpoint.authentication.type === 'apiKey') {
       parts.push(`-H "Authorization: ApiKey ${apiKey}"`);
     } else if (endpoint.authentication.type === 'bearer') {
@@ -92,36 +65,18 @@ const generateCurlExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: st
   
   // Add body if POST/PUT
   if ((endpoint.method === 'POST' || endpoint.method === 'PUT') && endpoint.parameters.body) {
-    const bodyData = Object.entries(endpoint.parameters.body).reduce((acc, [key, param]) => {
-      const value = paramValues?.[`body.${key}`];
-      if (value !== undefined && value !== '') {
-        acc[key] = convertValue(value, param.type);
-      } else if (param.required) {
-        switch (param.type.toLowerCase()) {
-          case 'boolean':
-            acc[key] = false;
-            break;
-          case 'number':
-          case 'integer':
-            acc[key] = 0;
-            break;
-          case 'array':
-            acc[key] = [];
-            break;
-          case 'object':
-            acc[key] = {};
-            break;
-          default:
-            acc[key] = `<${param.type}>`;
+    Object.entries(endpoint.parameters.body).forEach(([name, param]) => {
+      const value = paramValues?.[`body.${name}`];
+      if (value) {
+        if (param.type === 'file' || param.type === 'file[]') {
+          // Handle file uploads with -F
+          value.split(',').forEach(file => {
+            parts.push(`-F "${name}=@${file.trim()}"`);
+          });
+        } else {
+          // Handle regular form fields with -F
+          parts.push(`-F "${name}=${value}"`);
         }
-      }
-      return acc;
-    }, {} as Record<string, any>);
-    // Add file upload using -F for form data
-    Object.entries(bodyData).forEach(([key, value]) => {
-      if (value && typeof value === 'string') {
-        // Assuming it's a file path, use @ to specify file upload
-        parts.push(`-F "${key}=@${value}"`);
       }
     });
   }
@@ -138,10 +93,10 @@ const generatePythonExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: 
     ''
   ];
   
-  // Add headers without Content-Type (requests will set it automatically for files)
+  // Add headers
   const headers: Record<string, string> = {};
   
-  if (apiKey && endpoint.authentication) {
+  if (endpoint.authentication) {
     if (endpoint.authentication.type === 'apiKey') {
       headers['Authorization'] = `ApiKey ${apiKey}`;
     } else if (endpoint.authentication.type === 'bearer') {
@@ -153,36 +108,20 @@ const generatePythonExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: 
   
   // Add body if POST/PUT
   if ((endpoint.method === 'POST' || endpoint.method === 'PUT') && endpoint.parameters.body) {
-    const bodyData = Object.entries(endpoint.parameters.body).reduce((acc, [key, param]) => {
-      const value = paramValues?.[`body.${key}`];
-      if (value !== undefined && value !== '') {
-        acc[key] = convertValue(value, param.type);
-      } else if (param.required) {
-        switch (param.type.toLowerCase()) {
-          case 'boolean':
-            acc[key] = false;
-            break;
-          case 'number':
-          case 'integer':
-            acc[key] = 0;
-            break;
-          case 'array':
-            acc[key] = [];
-            break;
-          case 'object':
-            acc[key] = {};
-            break;
-          default:
-            acc[key] = `<${param.type}>`;
-        }
-      }
-      return acc;
-    }, {} as Record<string, any>);
     lines.push('');
     lines.push('files = {');
-    Object.entries(bodyData).forEach(([key, value]) => {
-      if (value && typeof value === 'string') {
-        lines.push(`    '${key}': open('${value}', 'rb'),`);
+    Object.entries(endpoint.parameters.body).forEach(([name, param]) => {
+      const value = paramValues?.[`body.${name}`];
+      if (value) {
+        if (param.type === 'file' || param.type === 'file[]') {
+          // Handle file uploads
+          value.split(',').forEach((file, index) => {
+            lines.push(`    '${name}': ('${file.trim()}', open('${file.trim()}', 'rb')),`);
+          });
+        } else {
+          // Handle regular form fields
+          lines.push(`    '${name}': '${value}',`);
+        }
       }
     });
     lines.push('}');
@@ -202,53 +141,45 @@ const generatePythonExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: 
 
 const generateJavaScriptExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: string, paramValues?: Record<string, string>): string => {
   const lines: string[] = [
-    'const options = {',
-    `  method: '${endpoint.method}',`,
-    '  headers: {'
+    'const formData = new FormData();',
+    ''
   ];
   
-  if (apiKey && endpoint.authentication) {
+  // Add body if POST/PUT
+  if ((endpoint.method === 'POST' || endpoint.method === 'PUT') && endpoint.parameters.body) {
+    Object.entries(endpoint.parameters.body).forEach(([name, param]) => {
+      const value = paramValues?.[`body.${name}`];
+      if (value) {
+        if (param.type === 'file' || param.type === 'file[]') {
+          // Handle file uploads
+          value.split(',').forEach(file => {
+            lines.push(`// Assuming '${file.trim()}' is a File object`);
+            lines.push(`formData.append('${name}', file);`);
+          });
+        } else {
+          // Handle regular form fields
+          lines.push(`formData.append('${name}', '${value}');`);
+        }
+      }
+    });
+    lines.push('');
+  }
+  
+  lines.push('const options = {');
+  lines.push(`  method: '${endpoint.method}',`);
+  lines.push('  headers: {');
+  
+  if (endpoint.authentication) {
     if (endpoint.authentication.type === 'apiKey') {
       lines.push(`    'Authorization': 'ApiKey ${apiKey}',`);
     } else if (endpoint.authentication.type === 'bearer') {
       lines.push(`    'Authorization': 'Bearer ${apiKey}',`);
     }
   }
+  
   lines.push('  },');
   
   if ((endpoint.method === 'POST' || endpoint.method === 'PUT') && endpoint.parameters.body) {
-    const bodyData = Object.entries(endpoint.parameters.body).reduce((acc, [key, param]) => {
-      const value = paramValues?.[`body.${key}`];
-      if (value !== undefined && value !== '') {
-        acc[key] = convertValue(value, param.type);
-      } else if (param.required) {
-        switch (param.type.toLowerCase()) {
-          case 'boolean':
-            acc[key] = false;
-            break;
-          case 'number':
-          case 'integer':
-            acc[key] = 0;
-            break;
-          case 'array':
-            acc[key] = [];
-            break;
-          case 'object':
-            acc[key] = {};
-            break;
-          default:
-            acc[key] = `<${param.type}>`;
-        }
-      }
-      return acc;
-    }, {} as Record<string, any>);
-    // Handle file upload using FormData
-    lines.push('const formData = new FormData();');
-    Object.entries(bodyData).forEach(([key, value]) => {
-      if (value && typeof value === 'string') {
-        lines.push(`formData.append('${key}', new File([''], '${value.split('/').pop()}', { type: 'application/octet-stream' }));`);
-      }
-    });
     lines.push('  body: formData,');
   }
   
@@ -267,9 +198,11 @@ const generateGoExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: stri
     'package main',
     '',
     'import (',
+    '    "bytes"',
     '    "io"',
     '    "mime/multipart"',
     '    "os"',
+    '    "path/filepath"',
     '    "fmt"',
     '    "net/http"',
     ')',
@@ -279,37 +212,49 @@ const generateGoExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: stri
   
   // Add body if POST/PUT
   if ((endpoint.method === 'POST' || endpoint.method === 'PUT') && endpoint.parameters.body) {
-    // Create multipart form data
     lines.push('    body := &bytes.Buffer{}');
     lines.push('    writer := multipart.NewWriter(body)');
     lines.push('');
     
-    // Add file fields
-    Object.entries(endpoint.parameters.body).forEach(([key, param]) => {
-      const value = paramValues?.[`body.${key}`];
-      if (value && typeof value === 'string') {
-        lines.push(`    file, err := os.Open("${value}")`);
-        lines.push('    if err != nil {');
-        lines.push('        fmt.Println("Error:", err)');
-        lines.push('        return');
-        lines.push('    }');
-        lines.push('    defer file.Close()');
-        lines.push('');
-        lines.push(`    part, err := writer.CreateFormFile("${key}", "${value.split('/').pop()}")`);
-        lines.push('    if err != nil {');
-        lines.push('        fmt.Println("Error:", err)');
-        lines.push('        return');
-        lines.push('    }');
-        lines.push('');
-        lines.push('    _, err = io.Copy(part, file)');
-        lines.push('    if err != nil {');
-        lines.push('        fmt.Println("Error:", err)');
-        lines.push('        return');
-        lines.push('    }');
+    Object.entries(endpoint.parameters.body).forEach(([name, param]) => {
+      const value = paramValues?.[`body.${name}`];
+      if (value) {
+        if (param.type === 'file' || param.type === 'file[]') {
+          // Handle file uploads
+          value.split(',').forEach(file => {
+            const trimmedFile = file.trim();
+            lines.push(`    file, err := os.Open("${trimmedFile}")`);
+            lines.push('    if err != nil {');
+            lines.push('        fmt.Println("Error:", err)');
+            lines.push('        return');
+            lines.push('    }');
+            lines.push('    defer file.Close()');
+            lines.push('');
+            lines.push(`    part, err := writer.CreateFormFile("${name}", filepath.Base("${trimmedFile}"))`);
+            lines.push('    if err != nil {');
+            lines.push('        fmt.Println("Error:", err)');
+            lines.push('        return');
+            lines.push('    }');
+            lines.push('');
+            lines.push('    _, err = io.Copy(part, file)');
+            lines.push('    if err != nil {');
+            lines.push('        fmt.Println("Error:", err)');
+            lines.push('        return');
+            lines.push('    }');
+            lines.push('');
+          });
+        } else {
+          // Handle regular form fields
+          lines.push(`    err := writer.WriteField("${name}", "${value}")`);
+          lines.push('    if err != nil {');
+          lines.push('        fmt.Println("Error:", err)');
+          lines.push('        return');
+          lines.push('    }');
+          lines.push('');
+        }
       }
     });
     
-    lines.push('');
     lines.push('    err := writer.Close()');
     lines.push('    if err != nil {');
     lines.push('        fmt.Println("Error:", err)');
@@ -320,6 +265,7 @@ const generateGoExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: stri
   
   const url = getUrlWithPathParams(`${baseUrl}${endpoint.path}`, endpoint, paramValues);
   lines.push(`    req, err := http.NewRequest("${endpoint.method}", "${url}", `);
+  
   if ((endpoint.method === 'POST' || endpoint.method === 'PUT') && endpoint.parameters.body) {
     lines.push('        body)');
   } else {
@@ -332,9 +278,11 @@ const generateGoExample = (endpoint: ApiEndpoint, baseUrl: string, apiKey?: stri
   lines.push('    }');
   lines.push('');
   
-  // Add headers
-  lines.push('    req.Header.Set("Content-Type", writer.FormDataContentType())');
-  if (apiKey && endpoint.authentication) {
+  if ((endpoint.method === 'POST' || endpoint.method === 'PUT') && endpoint.parameters.body) {
+    lines.push('    req.Header.Set("Content-Type", writer.FormDataContentType())');
+  }
+  
+  if (endpoint.authentication) {
     if (endpoint.authentication.type === 'apiKey') {
       lines.push(`    req.Header.Set("Authorization", "ApiKey ${apiKey}")`);
     } else if (endpoint.authentication.type === 'bearer') {
