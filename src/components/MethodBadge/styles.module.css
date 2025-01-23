@@ -1,0 +1,37 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 38px;
+  margin-right: 8px;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  flex-shrink: 0;
+  height: 16px;
+  line-height: 1;
+}
+
+.get {
+  background-color: #4299e1;
+}
+
+.post {
+  background-color: #3ecc5f;
+}
+
+.put {
+  background-color: #ed8936;
+}
+
+.delete {
+  background-color: #f56565;
+}
+
+:global([data-theme='dark']) .badge {
+  opacity: 0.9;
+}

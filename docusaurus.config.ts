@@ -41,8 +41,7 @@ const config: Config = {
         sidebarPath: undefined,
         sidebarCollapsible: true,
         async sidebarItemsGenerator({defaultSidebarItemsGenerator, ...args}) {
-          const sidebarItems = await defaultSidebarItemsGenerator(args);
-          return sidebarItems;
+          return defaultSidebarItemsGenerator(args);
         },
       },
     ],
@@ -55,8 +54,7 @@ const config: Config = {
         sidebarPath: undefined,
         sidebarCollapsible: true,
         async sidebarItemsGenerator({defaultSidebarItemsGenerator, ...args}) {
-          const sidebarItems = await defaultSidebarItemsGenerator(args);
-          return sidebarItems;
+          return defaultSidebarItemsGenerator(args);
         },
       },
     ],
