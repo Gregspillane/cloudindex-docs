@@ -3,15 +3,48 @@ title: Send Message (POST)
 sidebar_position: 4
 ---
 
+import ApiPlayground from '@site/src/components/ApiPlayground';
+
 # Send Message
 
 Send a message to an existing chat thread.
 
-## Endpoint
-
-```http
-POST /chat/threads/{sessionId}/messages
-```
+<ApiPlayground
+  endpoint={{
+    method: 'POST',
+    path: '/chat/threads/{sessionId}/messages',
+    parameters: {
+      path: {
+        sessionId: {
+          name: 'sessionId',
+          type: 'string',
+          required: true,
+          description: 'Thread identifier (UUID)'
+        }
+      },
+      body: {
+        message: {
+          name: 'message',
+          type: 'string',
+          required: true,
+          description: 'Message content'
+        },
+        includeSources: {
+          name: 'includeSources',
+          type: 'boolean',
+          required: false,
+          description: 'Whether to include source references in this message\'s response. When provided, this will also update the thread\'s source inclusion setting for future messages. When not provided, uses the thread\'s current source inclusion setting.'
+        }
+      }
+    },
+    authentication: {
+      type: 'apiKey',
+      location: 'header'
+    }
+  }}
+  baseUrl="https://api.cloudindex.ai/public/v1"
+  languages={['curl', 'python', 'javascript', 'go']}
+/>
 
 ## Description
 
@@ -37,7 +70,7 @@ Sends a new message to an existing thread and receives an AI-generated response.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `message` | string | Yes | The message content |
-| `includeSources` | boolean | No | Whether to include source references in the response |
+| `includeSources` | boolean | No | Whether to include source references in the response. When provided, this will also update the thread's source inclusion setting for future messages. |
 
 ## Response
 
@@ -100,16 +133,38 @@ Sends a new message to an existing thread and receives an AI-generated response.
 | 404 | Thread not found |
 | 429 | Rate limit exceeded |
 
-### Example Error Response
+### Example Error Responses
 
+#### Invalid Request
 ```json
 {
-  "error": "Message content required",
+  "error": "Invalid input parameters",
   "code": "validation_error",
   "category": "validation",
   "details": {
-    "field": "message"
+    "message": "Message content is required"
   }
+}
+```
+
+#### Thread Not Found
+```json
+{
+  "error": "Thread not found",
+  "code": "not_found",
+  "category": "validation",
+  "details": {
+    "sessionId": "thread_abc123"
+  }
+}
+```
+
+#### Rate Limit Exceeded
+```json
+{
+  "error": "Rate limit exceeded",
+  "code": "rate_limit_exceeded",
+  "category": "rate_limit"
 }
 ```
 

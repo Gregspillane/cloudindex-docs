@@ -3,15 +3,34 @@ title: Delete Thread (DELETE)
 sidebar_position: 3
 ---
 
+import ApiPlayground from '@site/src/components/ApiPlayground';
+
 # Delete Thread
 
 Delete an existing chat thread and its associated message history.
 
-## Endpoint
-
-```http
-DELETE /chat/threads/{sessionId}
-```
+<ApiPlayground
+  endpoint={{
+    method: 'DELETE',
+    path: '/chat/threads/{sessionId}',
+    parameters: {
+      path: {
+        sessionId: {
+          name: 'sessionId',
+          type: 'string',
+          required: true,
+          description: 'Thread identifier (UUID)'
+        }
+      }
+    },
+    authentication: {
+      type: 'apiKey',
+      location: 'header'
+    }
+  }}
+  baseUrl="https://api.cloudindex.ai/public/v1"
+  languages={['curl', 'python', 'javascript', 'go']}
+/>
 
 ## Description
 
@@ -35,21 +54,32 @@ Permanently deletes a chat thread and all its associated messages. This action c
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `message` | string | Confirmation message |
+| `message` | string | Success message |
 
 ## Error Responses
 
 | Status Code | Description |
 |-------------|-------------|
-| 400 | Invalid thread ID |
+| 400 | Invalid request parameters |
 | 401 | Invalid API key |
 | 404 | Thread not found |
 | 429 | Rate limit exceeded |
 
 ### Example Error Responses
 
-#### Thread Not Found
+#### Invalid Request
+```json
+{
+  "error": "Invalid thread ID",
+  "code": "validation_error",
+  "category": "validation",
+  "details": {
+    "message": "Thread ID must be a valid UUID"
+  }
+}
+```
 
+#### Thread Not Found
 ```json
 {
   "error": "Thread not found",
@@ -61,16 +91,24 @@ Permanently deletes a chat thread and all its associated messages. This action c
 }
 ```
 
-#### Invalid Thread ID
-
+#### Invalid API Key
 ```json
 {
-  "error": "Invalid thread ID",
-  "code": "validation_error",
-  "category": "validation",
+  "error": "Invalid API key",
+  "code": "invalid_api_key",
+  "category": "authentication",
   "details": {
-    "message": "Thread ID must be a valid UUID"
+    "reason": "The provided API key does not exist"
   }
+}
+```
+
+#### Rate Limit Exceeded
+```json
+{
+  "error": "Rate limit exceeded",
+  "code": "rate_limit_exceeded",
+  "category": "rate_limit"
 }
 ```
 
