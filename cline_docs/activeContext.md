@@ -1,25 +1,27 @@
 # Active Context
 
 ## Current Focus
-- Query API documentation improvements
+- Chat API documentation improvements
 - API playground enhancements
 - Enterprise-grade documentation standards
 
 ## Recent Changes
-1. Updated Query API Documentation:
-   - Renamed POST_hybrid-search.md to POST_query.md for clarity
-   - Enhanced overview.md with enterprise focus
-   - Updated all code examples to use "query" instead of "search"
-   - Fixed MDX syntax issues
-   - Added comprehensive error handling examples
-   - Enhanced parameter descriptions and examples
+1. Updated Chat API Documentation:
+   - Renamed files to follow HTTP method convention:
+     - message-history.md → GET_message-history.md
+     - send-message.md → POST_send-message.md
+   - Added ApiPlayground components to all chat endpoints
+   - Updated all endpoints to match OpenAPI spec
+   - Enhanced error response examples
+   - Improved parameter descriptions
 
 2. Documentation Structure:
-   - Improved organization and readability
-   - Added clear section headings
-   - Enhanced code examples with best practices
-   - Added implementation tips
-   - Updated security considerations
+   - Removed outdated common/ directory
+   - Updated introduction.md for accuracy
+   - Fixed authentication format (ApiKey)
+   - Enhanced error handling documentation
+   - Updated rate limiting information
+   - Added comprehensive response headers section
 
 3. Enterprise Focus Enhancements:
    - Added detailed error handling patterns
@@ -30,7 +32,7 @@
 
 ## Next Steps for Next LLM
 1. API Playground Improvements:
-   - Enhance Query API playground
+   - Enhance Chat API playground
    - Improve parameter organization
    - Add better examples
    - Update response handling

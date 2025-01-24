@@ -1,5 +1,5 @@
-import {themes as prismThemes} from 'prism-react-renderer';
-import type {Config} from '@docusaurus/types';
+import { themes as prismThemes } from 'prism-react-renderer';
+import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
@@ -40,7 +40,7 @@ const config: Config = {
         routeBasePath: 'docs',
         sidebarPath: undefined,
         sidebarCollapsible: true,
-        async sidebarItemsGenerator({defaultSidebarItemsGenerator, ...args}) {
+        async sidebarItemsGenerator({ defaultSidebarItemsGenerator, ...args }) {
           return defaultSidebarItemsGenerator(args);
         },
       },
@@ -53,7 +53,7 @@ const config: Config = {
         routeBasePath: 'api-reference',
         sidebarPath: undefined,
         sidebarCollapsible: true,
-        async sidebarItemsGenerator({defaultSidebarItemsGenerator, ...args}) {
+        async sidebarItemsGenerator({ defaultSidebarItemsGenerator, ...args }) {
           return defaultSidebarItemsGenerator(args);
         },
       },
@@ -64,17 +64,7 @@ const config: Config = {
       'classic',
       {
         docs: false, // Disable the docs plugin in the classic preset since we're using it as a standalone plugin
-        blog: {
-          showReadingTime: true,
-          feedOptions: {
-            type: ['rss', 'atom'],
-            xslt: true,
-          },
-          editUrl: 'https://github.com/cloudindex/cloudindex-docs/tree/main/',
-          onInlineTags: 'warn',
-          onInlineAuthors: 'warn',
-          onUntruncatedBlogPosts: 'warn',
-        },
+        blog: false,
         theme: {
           customCss: './src/css/custom.css',
         },
@@ -148,10 +138,6 @@ const config: Config = {
         {
           title: 'More',
           items: [
-            {
-              label: 'Blog',
-              to: '/blog',
-            },
             {
               label: 'GitHub',
               href: 'https://github.com/cloudindex/cloudindex-docs',
