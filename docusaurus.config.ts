@@ -35,19 +35,6 @@ const config: Config = {
     [
       '@docusaurus/plugin-content-docs',
       {
-        id: 'default',
-        path: 'docs/docs',
-        routeBasePath: 'docs',
-        sidebarPath: undefined,
-        sidebarCollapsible: true,
-        async sidebarItemsGenerator({ defaultSidebarItemsGenerator, ...args }) {
-          return defaultSidebarItemsGenerator(args);
-        },
-      },
-    ],
-    [
-      '@docusaurus/plugin-content-docs',
-      {
         id: 'api',
         path: 'docs/api-reference',
         routeBasePath: 'api-reference',
@@ -82,69 +69,20 @@ const config: Config = {
         style: {
           maxHeight: '40px',
           width: 'auto'
-        }
+        },
+        href: '/api-reference/introduction',
       },
       items: [
-        {
-          to: '/docs/getting-started/introduction',
-          position: 'left',
-          label: 'Docs',
-        },
         {
           to: '/api-reference/introduction',
           position: 'left',
           label: 'API Reference',
         },
-        {
-          href: 'https://github.com/cloudindex/cloudindex-docs',
-          label: 'GitHub',
-          position: 'right',
-        },
       ],
     },
     footer: {
       style: 'dark',
-      links: [
-        {
-          title: 'Documentation',
-          items: [
-            {
-              label: 'Getting Started',
-              to: '/docs/getting-started/introduction',
-            },
-            {
-              label: 'API Reference',
-              to: '/api-reference/introduction',
-            },
-          ],
-        },
-        {
-          title: 'Resources',
-          items: [
-            {
-              label: 'Core Concepts',
-              to: '/docs/core-concepts/rag-overview',
-            },
-            {
-              label: 'Guides',
-              to: '/docs/guides/document-upload',
-            },
-            {
-              label: 'Integrations',
-              to: '/docs/integrations/google-drive',
-            },
-          ],
-        },
-        {
-          title: 'More',
-          items: [
-            {
-              label: 'GitHub',
-              href: 'https://github.com/cloudindex/cloudindex-docs',
-            },
-          ],
-        },
-      ],
+      links: [],
       copyright: `Copyright © ${new Date().getFullYear()} Cloudindex.`,
     },
     prism: {
