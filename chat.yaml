@@ -1,0 +1,629 @@
+openapi: 3.0.0
+info:
+  title: CloudIndex Chat API
+  version: '1.0.0'
+  description: |
+    The CloudIndex Chat API enables real-time conversational interactions with your document knowledge base.
+    This API provides thread management, message handling, and streaming capabilities.
+
+    ## Chat Modes
+    The API supports two modes of operation:
+
+    1. Stateless Mode:
+       - Use POST /chat/messages for one-off interactions
+       - No conversation history is maintained
+       - Each request is independent
+
+    2. Thread Mode:
+       - Create a thread with POST /chat/threads
+       - Send messages to thread with POST /chat/threads/{sessionId}/messages
+       - Maintains conversation history and context
+       - Supports up to 10 messages in context window
+       - Includes source document tracking
+
+    ## Thread Management
+    Threads provide persistent conversations with context:
+    1. Create thread: POST /chat/threads
+    2. Send message: POST /chat/threads/{sessionId}/messages
+    3. View history: GET /chat/threads/{sessionId}/messages/history
+    4. List threads: GET /chat/threads
+    5. Delete thread: DELETE /chat/threads/{sessionId}
+
+    Each thread maintains:
+    - Message history
+    - Context window (last 10 messages)
+    - System prompt configuration
+    - Source document tracking
+
+    ## LLM Provider Configuration
+    The chat system uses the LLM provider configured at the organization level. The following providers are supported:
+    - OpenAI
+    - Anthropic
+    - Other configured providers
+
+    The specific model used for responses will be the one selected in your organization's LLM provider settings.
+
+    ## System Prompts
+    Chat responses are guided by system prompts that can be configured at multiple levels:
+    1. Thread Level: Custom prompt for a specific chat thread
+    2. Project Level: Default prompt for all threads in the project
+    3. System Default: Used when no custom prompts are specified
+
+    System prompts help ensure responses are relevant to your document context and follow desired formatting and behavior patterns.
+
+servers:
+  - url: https://api.cloudindex.ai/public/v1
+    description: Production server
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: 'API key with format: ApiKey YOUR_API_KEY'
+
+  schemas:
+    DocumentMetadata:
+      type: object
+      properties:
+        mime_type:
+          type: string
+          description: MIME type of the source document
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp of the document
+        file_path:
+          type: string
+          description: Path to the source file
+        source_type:
+          type: string
+          description: Type of data source
+
+    ScoredChunk:
+      type: object
+      required:
+        - content
+        - score
+        - metadata
+      properties:
+        content:
+          type: string
+          description: Clean content of the chunk without headers
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Relevance score (0-1)
+        metadata:
+          type: object
+          required:
+            - document_id
+            - document_name
+            - type
+          properties:
+            document_id:
+              type: string
+              description: Source document identifier
+            document_name:
+              type: string
+              description: Original document name (e.g., 'Emblem-Overview.docx')
+            type:
+              type: string
+              enum: [document]
+              description: Type of the source
+
+    ThreadResponse:
+      type: object
+      required:
+        - id
+        - projectId
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique thread identifier
+        projectId:
+          type: string
+          format: uuid
+          description: Project identifier
+        status:
+          type: string
+          enum: [active, archived]
+          description: Thread status
+        isStarred:
+          type: boolean
+          description: Whether thread is starred
+        displayOrder:
+          type: integer
+          description: Display order for UI
+        createdAt:
+          type: string
+          format: date-time
+          description: Thread creation timestamp
+        lastActiveAt:
+          type: string
+          format: date-time
+          description: Last activity timestamp
+        metadata:
+          type: object
+          description: Additional thread metadata
+        totalMessages:
+          type: integer
+          description: Total message count
+        totalTokens:
+          type: integer
+          description: Total tokens used
+        averageResponseTime:
+          type: number
+          description: Average response time in ms
+        includeSources:
+          type: boolean
+          description: Whether to include sources in responses
+        systemPrompt:
+          type: string
+          description: Custom system prompt for thread
+
+    MessageHistoryResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Message identifier
+              sessionId:
+                type: string
+                format: uuid
+                description: Thread identifier
+              role:
+                type: string
+                enum: [user, assistant]
+                description: Message sender role
+              content:
+                type: string
+                description: Message content
+              createdAt:
+                type: string
+                format: date-time
+                description: Message timestamp
+              metadata:
+                type: object
+                description: Message metadata
+              tokensUsed:
+                type: integer
+                description: Tokens used for this message
+              processingTime:
+                type: integer
+                description: Processing time in ms
+              contextMetadata:
+                type: object
+                properties:
+                  tokenCount:
+                    type: integer
+                    description: Token count for this message
+                  includedInContext:
+                    type: boolean
+                    description: Whether message is in current context window
+
+    ChatResponse:
+      type: object
+      required:
+        - message
+        - usage
+      properties:
+        message:
+          type: object
+          required:
+            - id
+            - role
+            - content
+            - created_at
+          properties:
+            id:
+              type: string
+              pattern: '^msg_[a-zA-Z0-9]+$'
+              description: Unique message identifier
+            role:
+              type: string
+              enum: [assistant]
+              description: Role of the message sender
+            content:
+              type: string
+              description: Message content
+            created_at:
+              type: string
+              format: date-time
+              description: ISO 8601 timestamp of message creation
+        usage:
+          type: object
+          required:
+            - prompt_tokens
+            - completion_tokens
+            - total_tokens
+          properties:
+            prompt_tokens:
+              type: integer
+              description: Number of tokens in the prompt
+            completion_tokens:
+              type: integer
+              description: Number of tokens in the completion
+            total_tokens:
+              type: integer
+              description: Total number of tokens used
+        scored_chunks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoredChunk'
+          description: Optional source references with relevance scores
+
+    ChatStreamResponse:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [connected, error, end]
+          description: Event type
+        error:
+          type: string
+          description: Error message if type is 'error'
+        response:
+          type: string
+          description: Partial response content
+        scored_chunks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoredChunk'
+          description: Source references with relevance scores (only sent with 'end' event)
+        metadata:
+          type: object
+          properties:
+            processing_time:
+              type: number
+              description: Processing time in milliseconds
+            node_count:
+              type: integer
+              description: Number of nodes processed
+
+    Error:
+      type: object
+      required:
+        - error
+        - code
+        - category
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Machine-readable error code
+        category:
+          type: string
+          enum: [authentication, validation, rate_limit, system]
+          description: Error category
+        details:
+          type: object
+          description: Additional error context
+
+paths:
+  /chat/threads:
+    post:
+      summary: Create a new chat thread
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                includeSources:
+                  type: boolean
+                  description: |
+                    Controls whether responses include source references from your documents:
+                    
+                    When true:
+                    - Responses include scored_chunks array with relevant document excerpts
+                    - Each chunk includes content, relevance score, and metadata
+                    - Higher token usage due to source inclusion
+                    - Larger response payload size
+                    
+                    When false (default):
+                    - Minimal response structure without scored_chunks
+                    - Lower token usage (typically 60-70% reduction)
+                    - Faster processing time
+                    - Smaller response payload
+                    
+                    This setting persists for the thread and can be updated per message.
+                    Use it to optimize between source verification needs and performance.
+                systemPrompt:
+                  type: string
+                  description: Custom system prompt for thread
+      responses:
+        '200':
+          description: Thread created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThreadResponse'
+
+    get:
+      summary: List chat threads
+      responses:
+        '200':
+          description: List of threads
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  threads:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ThreadResponse'
+
+  /chat/threads/{sessionId}/messages:
+    post:
+      summary: Send message to thread
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  description: Message content
+                includeSources:
+                  type: boolean
+                  description: |
+                    Whether to include source references in this message's response. When provided,
+                    this will also update the thread's source inclusion setting for future messages.
+                    When not provided, uses the thread's current source inclusion setting.
+      responses:
+        '200':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+
+  /chat/threads/{sessionId}/messages/history:
+    get:
+      summary: Get thread message history
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Thread history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageHistoryResponse'
+
+  /chat/threads/{sessionId}:
+    patch:
+      summary: Update a chat thread
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                  description: Display name for the thread
+                status:
+                  type: string
+                  enum: [active, archived]
+                  description: Thread status
+                metadata:
+                  type: object
+                  description: Additional thread metadata
+                systemPrompt:
+                  type: string
+                  maxLength: 4000
+                  description: Custom system prompt for thread
+                includeSources:
+                  type: boolean
+                  description: Whether to include sources in responses
+      responses:
+        '200':
+          description: Thread updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThreadResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Thread not found
+
+    delete:
+      summary: Delete a chat thread
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Thread deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Success message
+
+  /chat/messages:
+    get:
+      summary: Send a stateless chat message
+      parameters:
+        - name: message
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4000
+          description: The message to send
+        - name: include_sources
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: |
+            Whether to include source references in the response. When true, response will include
+            relevant chunks from source documents with relevance scores. When false, response
+            will not include source references. Defaults to false.
+        - name: stream
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Whether to stream the response
+      responses:
+        '200':
+          description: Chat response
+          headers:
+            X-Request-ID:
+              schema:
+                type: string
+                pattern: '^req_[0-9]+$'
+              description: Unique request identifier
+            X-Model:
+              schema:
+                type: string
+                example: 'anthropic-claude-3-sonnet-20240229'
+              description: LLM model used for the response
+            X-Provider:
+              schema:
+                type: string
+                example: 'anthropic'
+              description: LLM provider used for the response
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Rate limit ceiling for the given request
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: Number of requests remaining in the current time window
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: The time at which the current rate limit window resets in UTC epoch seconds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/ChatStreamResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+
+components:
+  responses:
+    UnauthorizedError:
+      description: Authentication error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            missingApiKey:
+              value:
+                error: "Missing API key"
+                code: "missing_api_key"
+                category: "authentication"
+                details:
+                  location: "Authorization header"
+            invalidApiKey:
+              value:
+                error: "Invalid API key"
+                code: "invalid_api_key"
+                category: "authentication"
+                details:
+                  reason: "The provided API key does not exist"
+
+    ValidationError:
+      description: Invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Invalid input parameters"
+            code: "validation_error"
+            category: "validation"
+            details:
+              message: "Message content is required"
+
+    RateLimitError:
+      description: Rate limit exceeded
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Rate limit ceiling for the given request
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Number of requests remaining in the current time window
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: The time at which the current rate limit window resets in UTC epoch seconds
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Rate limit exceeded"
+            code: "rate_limit_exceeded"
+            category: "rate_limit"

@@ -1,5 +1,5 @@
 ---
-title: Stateless Chat (POST)
+title: Stateless Chat (GET)
 sidebar_position: 2
 ---
 
@@ -11,10 +11,10 @@ Send one-off messages without maintaining conversation history.
 
 <ApiPlayground
   endpoint={{
-    method: 'POST',
+    method: 'GET',
     path: '/chat/messages',
     parameters: {
-      body: {
+      query: {
         message: {
           name: 'message',
           type: 'string',
@@ -50,20 +50,10 @@ Send individual messages to the AI without maintaining conversation context. Ide
 
 ## Request
 
-### Request Body
+### Query Parameters
 
-```json
-{
-  "message": "string",
-  "include_sources": boolean,
-  "stream": boolean
-}
-```
-
-### Fields
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
 | `message` | string | Yes | The message to send |
 | `include_sources` | boolean | No | Include document references (default: false) |
 | `stream` | boolean | No | Enable response streaming |
